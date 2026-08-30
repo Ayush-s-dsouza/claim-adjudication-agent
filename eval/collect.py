@@ -170,6 +170,8 @@ def load_already_done(out_path: Path) -> set[tuple[str, int]]:
             if not line.strip():
                 continue
             row = json.loads(line)
+            if row.get("error"):
+                continue  # failed attempts (e.g. insufficient credits) must be retried, not skipped
             done.add((row["case_id"], row["run_index"]))
     return done
 
