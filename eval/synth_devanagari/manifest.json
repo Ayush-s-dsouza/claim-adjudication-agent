@@ -1,0 +1,902 @@
+[
+  {
+    "case_id": "typeset_0_clean",
+    "field_type": "typeset",
+    "value_index": 0,
+    "degradation_level": "clean",
+    "true_value": "तीव्र हृदयाघात",
+    "image_path": "cases/typeset_0_clean.png",
+    "split": "validation"
+  },
+  {
+    "case_id": "typeset_0_mild",
+    "field_type": "typeset",
+    "value_index": 0,
+    "degradation_level": "mild",
+    "true_value": "तीव्र हृदयाघात",
+    "image_path": "cases/typeset_0_mild.png",
+    "split": "validation"
+  },
+  {
+    "case_id": "typeset_0_heavy",
+    "field_type": "typeset",
+    "value_index": 0,
+    "degradation_level": "heavy",
+    "true_value": "तीव्र हृदयाघात",
+    "image_path": "cases/typeset_0_heavy.png",
+    "split": "test"
+  },
+  {
+    "case_id": "typeset_0_illegible",
+    "field_type": "typeset",
+    "value_index": 0,
+    "degradation_level": "illegible",
+    "true_value": "तीव्र हृदयाघात",
+    "image_path": "cases/typeset_0_illegible.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "typeset_0_absent",
+    "field_type": "typeset",
+    "value_index": 0,
+    "degradation_level": "absent",
+    "true_value": null,
+    "image_path": "cases/typeset_0_absent.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "typeset_1_clean",
+    "field_type": "typeset",
+    "value_index": 1,
+    "degradation_level": "clean",
+    "true_value": "पूति के कारण हृदयाघात",
+    "image_path": "cases/typeset_1_clean.png",
+    "split": "test"
+  },
+  {
+    "case_id": "typeset_1_mild",
+    "field_type": "typeset",
+    "value_index": 1,
+    "degradation_level": "mild",
+    "true_value": "पूति के कारण हृदयाघात",
+    "image_path": "cases/typeset_1_mild.png",
+    "split": "test"
+  },
+  {
+    "case_id": "typeset_1_heavy",
+    "field_type": "typeset",
+    "value_index": 1,
+    "degradation_level": "heavy",
+    "true_value": "पूति के कारण हृदयाघात",
+    "image_path": "cases/typeset_1_heavy.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "typeset_1_illegible",
+    "field_type": "typeset",
+    "value_index": 1,
+    "degradation_level": "illegible",
+    "true_value": "पूति के कारण हृदयाघात",
+    "image_path": "cases/typeset_1_illegible.png",
+    "split": "validation"
+  },
+  {
+    "case_id": "typeset_1_absent",
+    "field_type": "typeset",
+    "value_index": 1,
+    "degradation_level": "absent",
+    "true_value": null,
+    "image_path": "cases/typeset_1_absent.png",
+    "split": "validation"
+  },
+  {
+    "case_id": "typeset_2_clean",
+    "field_type": "typeset",
+    "value_index": 2,
+    "degradation_level": "clean",
+    "true_value": "बहु-अंग विफलता",
+    "image_path": "cases/typeset_2_clean.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "typeset_2_mild",
+    "field_type": "typeset",
+    "value_index": 2,
+    "degradation_level": "mild",
+    "true_value": "बहु-अंग विफलता",
+    "image_path": "cases/typeset_2_mild.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "typeset_2_heavy",
+    "field_type": "typeset",
+    "value_index": 2,
+    "degradation_level": "heavy",
+    "true_value": "बहु-अंग विफलता",
+    "image_path": "cases/typeset_2_heavy.png",
+    "split": "validation"
+  },
+  {
+    "case_id": "typeset_2_illegible",
+    "field_type": "typeset",
+    "value_index": 2,
+    "degradation_level": "illegible",
+    "true_value": "बहु-अंग विफलता",
+    "image_path": "cases/typeset_2_illegible.png",
+    "split": "test"
+  },
+  {
+    "case_id": "typeset_2_absent",
+    "field_type": "typeset",
+    "value_index": 2,
+    "degradation_level": "absent",
+    "true_value": null,
+    "image_path": "cases/typeset_2_absent.png",
+    "split": "test"
+  },
+  {
+    "case_id": "typeset_3_clean",
+    "field_type": "typeset",
+    "value_index": 3,
+    "degradation_level": "clean",
+    "true_value": "बृहन्मुंबई महानगरपालिका",
+    "image_path": "cases/typeset_3_clean.png",
+    "split": "validation"
+  },
+  {
+    "case_id": "typeset_3_mild",
+    "field_type": "typeset",
+    "value_index": 3,
+    "degradation_level": "mild",
+    "true_value": "बृहन्मुंबई महानगरपालिका",
+    "image_path": "cases/typeset_3_mild.png",
+    "split": "validation"
+  },
+  {
+    "case_id": "typeset_3_heavy",
+    "field_type": "typeset",
+    "value_index": 3,
+    "degradation_level": "heavy",
+    "true_value": "बृहन्मुंबई महानगरपालिका",
+    "image_path": "cases/typeset_3_heavy.png",
+    "split": "test"
+  },
+  {
+    "case_id": "typeset_3_illegible",
+    "field_type": "typeset",
+    "value_index": 3,
+    "degradation_level": "illegible",
+    "true_value": "बृहन्मुंबई महानगरपालिका",
+    "image_path": "cases/typeset_3_illegible.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "typeset_3_absent",
+    "field_type": "typeset",
+    "value_index": 3,
+    "degradation_level": "absent",
+    "true_value": null,
+    "image_path": "cases/typeset_3_absent.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "name_0_clean",
+    "field_type": "name",
+    "value_index": 0,
+    "degradation_level": "clean",
+    "true_value": "रमेश कुमार शर्मा",
+    "image_path": "cases/name_0_clean.png",
+    "split": "validation"
+  },
+  {
+    "case_id": "name_0_mild",
+    "field_type": "name",
+    "value_index": 0,
+    "degradation_level": "mild",
+    "true_value": "रमेश कुमार शर्मा",
+    "image_path": "cases/name_0_mild.png",
+    "split": "validation"
+  },
+  {
+    "case_id": "name_0_heavy",
+    "field_type": "name",
+    "value_index": 0,
+    "degradation_level": "heavy",
+    "true_value": "रमेश कुमार शर्मा",
+    "image_path": "cases/name_0_heavy.png",
+    "split": "test"
+  },
+  {
+    "case_id": "name_0_illegible",
+    "field_type": "name",
+    "value_index": 0,
+    "degradation_level": "illegible",
+    "true_value": "रमेश कुमार शर्मा",
+    "image_path": "cases/name_0_illegible.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "name_0_absent",
+    "field_type": "name",
+    "value_index": 0,
+    "degradation_level": "absent",
+    "true_value": null,
+    "image_path": "cases/name_0_absent.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "name_1_clean",
+    "field_type": "name",
+    "value_index": 1,
+    "degradation_level": "clean",
+    "true_value": "प्रिया आनंद नायर",
+    "image_path": "cases/name_1_clean.png",
+    "split": "test"
+  },
+  {
+    "case_id": "name_1_mild",
+    "field_type": "name",
+    "value_index": 1,
+    "degradation_level": "mild",
+    "true_value": "प्रिया आनंद नायर",
+    "image_path": "cases/name_1_mild.png",
+    "split": "test"
+  },
+  {
+    "case_id": "name_1_heavy",
+    "field_type": "name",
+    "value_index": 1,
+    "degradation_level": "heavy",
+    "true_value": "प्रिया आनंद नायर",
+    "image_path": "cases/name_1_heavy.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "name_1_illegible",
+    "field_type": "name",
+    "value_index": 1,
+    "degradation_level": "illegible",
+    "true_value": "प्रिया आनंद नायर",
+    "image_path": "cases/name_1_illegible.png",
+    "split": "validation"
+  },
+  {
+    "case_id": "name_1_absent",
+    "field_type": "name",
+    "value_index": 1,
+    "degradation_level": "absent",
+    "true_value": null,
+    "image_path": "cases/name_1_absent.png",
+    "split": "validation"
+  },
+  {
+    "case_id": "name_2_clean",
+    "field_type": "name",
+    "value_index": 2,
+    "degradation_level": "clean",
+    "true_value": "फ़ातिमा बानो शेख",
+    "image_path": "cases/name_2_clean.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "name_2_mild",
+    "field_type": "name",
+    "value_index": 2,
+    "degradation_level": "mild",
+    "true_value": "फ़ातिमा बानो शेख",
+    "image_path": "cases/name_2_mild.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "name_2_heavy",
+    "field_type": "name",
+    "value_index": 2,
+    "degradation_level": "heavy",
+    "true_value": "फ़ातिमा बानो शेख",
+    "image_path": "cases/name_2_heavy.png",
+    "split": "validation"
+  },
+  {
+    "case_id": "name_2_illegible",
+    "field_type": "name",
+    "value_index": 2,
+    "degradation_level": "illegible",
+    "true_value": "फ़ातिमा बानो शेख",
+    "image_path": "cases/name_2_illegible.png",
+    "split": "test"
+  },
+  {
+    "case_id": "name_2_absent",
+    "field_type": "name",
+    "value_index": 2,
+    "degradation_level": "absent",
+    "true_value": null,
+    "image_path": "cases/name_2_absent.png",
+    "split": "test"
+  },
+  {
+    "case_id": "name_3_clean",
+    "field_type": "name",
+    "value_index": 3,
+    "degradation_level": "clean",
+    "true_value": "अर्जुन विनोद देशमुख",
+    "image_path": "cases/name_3_clean.png",
+    "split": "validation"
+  },
+  {
+    "case_id": "name_3_mild",
+    "field_type": "name",
+    "value_index": 3,
+    "degradation_level": "mild",
+    "true_value": "अर्जुन विनोद देशमुख",
+    "image_path": "cases/name_3_mild.png",
+    "split": "validation"
+  },
+  {
+    "case_id": "name_3_heavy",
+    "field_type": "name",
+    "value_index": 3,
+    "degradation_level": "heavy",
+    "true_value": "अर्जुन विनोद देशमुख",
+    "image_path": "cases/name_3_heavy.png",
+    "split": "test"
+  },
+  {
+    "case_id": "name_3_illegible",
+    "field_type": "name",
+    "value_index": 3,
+    "degradation_level": "illegible",
+    "true_value": "अर्जुन विनोद देशमुख",
+    "image_path": "cases/name_3_illegible.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "name_3_absent",
+    "field_type": "name",
+    "value_index": 3,
+    "degradation_level": "absent",
+    "true_value": null,
+    "image_path": "cases/name_3_absent.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "numeric_0_clean",
+    "field_type": "numeric",
+    "value_index": 0,
+    "degradation_level": "clean",
+    "true_value": "4471829",
+    "image_path": "cases/numeric_0_clean.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "numeric_0_mild",
+    "field_type": "numeric",
+    "value_index": 0,
+    "degradation_level": "mild",
+    "true_value": "4471829",
+    "image_path": "cases/numeric_0_mild.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "numeric_0_heavy",
+    "field_type": "numeric",
+    "value_index": 0,
+    "degradation_level": "heavy",
+    "true_value": "4471829",
+    "image_path": "cases/numeric_0_heavy.png",
+    "split": "validation"
+  },
+  {
+    "case_id": "numeric_0_illegible",
+    "field_type": "numeric",
+    "value_index": 0,
+    "degradation_level": "illegible",
+    "true_value": "4471829",
+    "image_path": "cases/numeric_0_illegible.png",
+    "split": "test"
+  },
+  {
+    "case_id": "numeric_0_absent",
+    "field_type": "numeric",
+    "value_index": 0,
+    "degradation_level": "absent",
+    "true_value": null,
+    "image_path": "cases/numeric_0_absent.png",
+    "split": "test"
+  },
+  {
+    "case_id": "numeric_1_clean",
+    "field_type": "numeric",
+    "value_index": 1,
+    "degradation_level": "clean",
+    "true_value": "88213",
+    "image_path": "cases/numeric_1_clean.png",
+    "split": "validation"
+  },
+  {
+    "case_id": "numeric_1_mild",
+    "field_type": "numeric",
+    "value_index": 1,
+    "degradation_level": "mild",
+    "true_value": "88213",
+    "image_path": "cases/numeric_1_mild.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "numeric_1_heavy",
+    "field_type": "numeric",
+    "value_index": 1,
+    "degradation_level": "heavy",
+    "true_value": "88213",
+    "image_path": "cases/numeric_1_heavy.png",
+    "split": "test"
+  },
+  {
+    "case_id": "numeric_1_illegible",
+    "field_type": "numeric",
+    "value_index": 1,
+    "degradation_level": "illegible",
+    "true_value": "88213",
+    "image_path": "cases/numeric_1_illegible.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "numeric_1_absent",
+    "field_type": "numeric",
+    "value_index": 1,
+    "degradation_level": "absent",
+    "true_value": null,
+    "image_path": "cases/numeric_1_absent.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "numeric_2_clean",
+    "field_type": "numeric",
+    "value_index": 2,
+    "degradation_level": "clean",
+    "true_value": "150000",
+    "image_path": "cases/numeric_2_clean.png",
+    "split": "test"
+  },
+  {
+    "case_id": "numeric_2_mild",
+    "field_type": "numeric",
+    "value_index": 2,
+    "degradation_level": "mild",
+    "true_value": "150000",
+    "image_path": "cases/numeric_2_mild.png",
+    "split": "validation"
+  },
+  {
+    "case_id": "numeric_2_heavy",
+    "field_type": "numeric",
+    "value_index": 2,
+    "degradation_level": "heavy",
+    "true_value": "150000",
+    "image_path": "cases/numeric_2_heavy.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "numeric_2_illegible",
+    "field_type": "numeric",
+    "value_index": 2,
+    "degradation_level": "illegible",
+    "true_value": "150000",
+    "image_path": "cases/numeric_2_illegible.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "numeric_2_absent",
+    "field_type": "numeric",
+    "value_index": 2,
+    "degradation_level": "absent",
+    "true_value": null,
+    "image_path": "cases/numeric_2_absent.png",
+    "split": "validation"
+  },
+  {
+    "case_id": "numeric_3_clean",
+    "field_type": "numeric",
+    "value_index": 3,
+    "degradation_level": "clean",
+    "true_value": "2026004417",
+    "image_path": "cases/numeric_3_clean.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "numeric_3_mild",
+    "field_type": "numeric",
+    "value_index": 3,
+    "degradation_level": "mild",
+    "true_value": "2026004417",
+    "image_path": "cases/numeric_3_mild.png",
+    "split": "test"
+  },
+  {
+    "case_id": "numeric_3_heavy",
+    "field_type": "numeric",
+    "value_index": 3,
+    "degradation_level": "heavy",
+    "true_value": "2026004417",
+    "image_path": "cases/numeric_3_heavy.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "numeric_3_illegible",
+    "field_type": "numeric",
+    "value_index": 3,
+    "degradation_level": "illegible",
+    "true_value": "2026004417",
+    "image_path": "cases/numeric_3_illegible.png",
+    "split": "validation"
+  },
+  {
+    "case_id": "numeric_3_absent",
+    "field_type": "numeric",
+    "value_index": 3,
+    "degradation_level": "absent",
+    "true_value": null,
+    "image_path": "cases/numeric_3_absent.png",
+    "split": "test"
+  },
+  {
+    "case_id": "date_0_clean",
+    "field_type": "date",
+    "value_index": 0,
+    "degradation_level": "clean",
+    "true_value": "12-03-2026",
+    "image_path": "cases/date_0_clean.png",
+    "split": "validation"
+  },
+  {
+    "case_id": "date_0_mild",
+    "field_type": "date",
+    "value_index": 0,
+    "degradation_level": "mild",
+    "true_value": "12-03-2026",
+    "image_path": "cases/date_0_mild.png",
+    "split": "validation"
+  },
+  {
+    "case_id": "date_0_heavy",
+    "field_type": "date",
+    "value_index": 0,
+    "degradation_level": "heavy",
+    "true_value": "12-03-2026",
+    "image_path": "cases/date_0_heavy.png",
+    "split": "test"
+  },
+  {
+    "case_id": "date_0_illegible",
+    "field_type": "date",
+    "value_index": 0,
+    "degradation_level": "illegible",
+    "true_value": "12-03-2026",
+    "image_path": "cases/date_0_illegible.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "date_0_absent",
+    "field_type": "date",
+    "value_index": 0,
+    "degradation_level": "absent",
+    "true_value": null,
+    "image_path": "cases/date_0_absent.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "date_1_clean",
+    "field_type": "date",
+    "value_index": 1,
+    "degradation_level": "clean",
+    "true_value": "04-01-2026",
+    "image_path": "cases/date_1_clean.png",
+    "split": "test"
+  },
+  {
+    "case_id": "date_1_mild",
+    "field_type": "date",
+    "value_index": 1,
+    "degradation_level": "mild",
+    "true_value": "04-01-2026",
+    "image_path": "cases/date_1_mild.png",
+    "split": "test"
+  },
+  {
+    "case_id": "date_1_heavy",
+    "field_type": "date",
+    "value_index": 1,
+    "degradation_level": "heavy",
+    "true_value": "04-01-2026",
+    "image_path": "cases/date_1_heavy.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "date_1_illegible",
+    "field_type": "date",
+    "value_index": 1,
+    "degradation_level": "illegible",
+    "true_value": "04-01-2026",
+    "image_path": "cases/date_1_illegible.png",
+    "split": "validation"
+  },
+  {
+    "case_id": "date_1_absent",
+    "field_type": "date",
+    "value_index": 1,
+    "degradation_level": "absent",
+    "true_value": null,
+    "image_path": "cases/date_1_absent.png",
+    "split": "validation"
+  },
+  {
+    "case_id": "date_2_clean",
+    "field_type": "date",
+    "value_index": 2,
+    "degradation_level": "clean",
+    "true_value": "17-07-2025",
+    "image_path": "cases/date_2_clean.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "date_2_mild",
+    "field_type": "date",
+    "value_index": 2,
+    "degradation_level": "mild",
+    "true_value": "17-07-2025",
+    "image_path": "cases/date_2_mild.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "date_2_heavy",
+    "field_type": "date",
+    "value_index": 2,
+    "degradation_level": "heavy",
+    "true_value": "17-07-2025",
+    "image_path": "cases/date_2_heavy.png",
+    "split": "validation"
+  },
+  {
+    "case_id": "date_2_illegible",
+    "field_type": "date",
+    "value_index": 2,
+    "degradation_level": "illegible",
+    "true_value": "17-07-2025",
+    "image_path": "cases/date_2_illegible.png",
+    "split": "test"
+  },
+  {
+    "case_id": "date_2_absent",
+    "field_type": "date",
+    "value_index": 2,
+    "degradation_level": "absent",
+    "true_value": null,
+    "image_path": "cases/date_2_absent.png",
+    "split": "test"
+  },
+  {
+    "case_id": "date_3_clean",
+    "field_type": "date",
+    "value_index": 3,
+    "degradation_level": "clean",
+    "true_value": "29-11-2026",
+    "image_path": "cases/date_3_clean.png",
+    "split": "validation"
+  },
+  {
+    "case_id": "date_3_mild",
+    "field_type": "date",
+    "value_index": 3,
+    "degradation_level": "mild",
+    "true_value": "29-11-2026",
+    "image_path": "cases/date_3_mild.png",
+    "split": "validation"
+  },
+  {
+    "case_id": "date_3_heavy",
+    "field_type": "date",
+    "value_index": 3,
+    "degradation_level": "heavy",
+    "true_value": "29-11-2026",
+    "image_path": "cases/date_3_heavy.png",
+    "split": "test"
+  },
+  {
+    "case_id": "date_3_illegible",
+    "field_type": "date",
+    "value_index": 3,
+    "degradation_level": "illegible",
+    "true_value": "29-11-2026",
+    "image_path": "cases/date_3_illegible.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "date_3_absent",
+    "field_type": "date",
+    "value_index": 3,
+    "degradation_level": "absent",
+    "true_value": null,
+    "image_path": "cases/date_3_absent.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "handwriting_0_clean",
+    "field_type": "handwriting",
+    "value_index": 0,
+    "degradation_level": "clean",
+    "true_value": "सेप्टिक शॉक",
+    "image_path": "cases/handwriting_0_clean.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "handwriting_0_mild",
+    "field_type": "handwriting",
+    "value_index": 0,
+    "degradation_level": "mild",
+    "true_value": "सेप्टिक शॉक",
+    "image_path": "cases/handwriting_0_mild.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "handwriting_0_heavy",
+    "field_type": "handwriting",
+    "value_index": 0,
+    "degradation_level": "heavy",
+    "true_value": "सेप्टिक शॉक",
+    "image_path": "cases/handwriting_0_heavy.png",
+    "split": "validation"
+  },
+  {
+    "case_id": "handwriting_0_illegible",
+    "field_type": "handwriting",
+    "value_index": 0,
+    "degradation_level": "illegible",
+    "true_value": "सेप्टिक शॉक",
+    "image_path": "cases/handwriting_0_illegible.png",
+    "split": "test"
+  },
+  {
+    "case_id": "handwriting_0_absent",
+    "field_type": "handwriting",
+    "value_index": 0,
+    "degradation_level": "absent",
+    "true_value": null,
+    "image_path": "cases/handwriting_0_absent.png",
+    "split": "test"
+  },
+  {
+    "case_id": "handwriting_1_clean",
+    "field_type": "handwriting",
+    "value_index": 1,
+    "degradation_level": "clean",
+    "true_value": "श्वसन विफलता",
+    "image_path": "cases/handwriting_1_clean.png",
+    "split": "validation"
+  },
+  {
+    "case_id": "handwriting_1_mild",
+    "field_type": "handwriting",
+    "value_index": 1,
+    "degradation_level": "mild",
+    "true_value": "श्वसन विफलता",
+    "image_path": "cases/handwriting_1_mild.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "handwriting_1_heavy",
+    "field_type": "handwriting",
+    "value_index": 1,
+    "degradation_level": "heavy",
+    "true_value": "श्वसन विफलता",
+    "image_path": "cases/handwriting_1_heavy.png",
+    "split": "test"
+  },
+  {
+    "case_id": "handwriting_1_illegible",
+    "field_type": "handwriting",
+    "value_index": 1,
+    "degradation_level": "illegible",
+    "true_value": "श्वसन विफलता",
+    "image_path": "cases/handwriting_1_illegible.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "handwriting_1_absent",
+    "field_type": "handwriting",
+    "value_index": 1,
+    "degradation_level": "absent",
+    "true_value": null,
+    "image_path": "cases/handwriting_1_absent.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "handwriting_2_clean",
+    "field_type": "handwriting",
+    "value_index": 2,
+    "degradation_level": "clean",
+    "true_value": "अचानक हृदय की मृत्यु",
+    "image_path": "cases/handwriting_2_clean.png",
+    "split": "test"
+  },
+  {
+    "case_id": "handwriting_2_mild",
+    "field_type": "handwriting",
+    "value_index": 2,
+    "degradation_level": "mild",
+    "true_value": "अचानक हृदय की मृत्यु",
+    "image_path": "cases/handwriting_2_mild.png",
+    "split": "validation"
+  },
+  {
+    "case_id": "handwriting_2_heavy",
+    "field_type": "handwriting",
+    "value_index": 2,
+    "degradation_level": "heavy",
+    "true_value": "अचानक हृदय की मृत्यु",
+    "image_path": "cases/handwriting_2_heavy.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "handwriting_2_illegible",
+    "field_type": "handwriting",
+    "value_index": 2,
+    "degradation_level": "illegible",
+    "true_value": "अचानक हृदय की मृत्यु",
+    "image_path": "cases/handwriting_2_illegible.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "handwriting_2_absent",
+    "field_type": "handwriting",
+    "value_index": 2,
+    "degradation_level": "absent",
+    "true_value": null,
+    "image_path": "cases/handwriting_2_absent.png",
+    "split": "validation"
+  },
+  {
+    "case_id": "handwriting_3_clean",
+    "field_type": "handwriting",
+    "value_index": 3,
+    "degradation_level": "clean",
+    "true_value": "गुर्दे की विफलता",
+    "image_path": "cases/handwriting_3_clean.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "handwriting_3_mild",
+    "field_type": "handwriting",
+    "value_index": 3,
+    "degradation_level": "mild",
+    "true_value": "गुर्दे की विफलता",
+    "image_path": "cases/handwriting_3_mild.png",
+    "split": "test"
+  },
+  {
+    "case_id": "handwriting_3_heavy",
+    "field_type": "handwriting",
+    "value_index": 3,
+    "degradation_level": "heavy",
+    "true_value": "गुर्दे की विफलता",
+    "image_path": "cases/handwriting_3_heavy.png",
+    "split": "tune"
+  },
+  {
+    "case_id": "handwriting_3_illegible",
+    "field_type": "handwriting",
+    "value_index": 3,
+    "degradation_level": "illegible",
+    "true_value": "गुर्दे की विफलता",
+    "image_path": "cases/handwriting_3_illegible.png",
+    "split": "validation"
+  },
+  {
+    "case_id": "handwriting_3_absent",
+    "field_type": "handwriting",
+    "value_index": 3,
+    "degradation_level": "absent",
+    "true_value": null,
+    "image_path": "cases/handwriting_3_absent.png",
+    "split": "test"
+  }
+]
