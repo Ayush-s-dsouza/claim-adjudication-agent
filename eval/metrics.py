@@ -25,7 +25,16 @@ CONFIDENCE_THRESHOLD = 0.80  # matches sufficiency.py's CONFIDENCE_THRESHOLD
 CALIBRATION_BUCKETS = [(0.0, 0.2), (0.2, 0.4), (0.4, 0.6), (0.6, 0.8), (0.8, 1.001)]
 
 LEGIBLE_LEVELS = {"clean", "mild", "heavy"}
-ABSTAIN_EXPECTED_LEVELS = {"illegible", "absent"}
+# The real-handwriting arm splits "illegible" into two sub-tiers
+# (illegible_processed / illegible_natural, see eval/generate_real_handwriting.py)
+# that the synthetic arms never produce. Both are "illegible-like" for
+# correctness/fabrication purposes -- correct behavior is still abstain-or-
+# match-truth -- but compute_metrics() reports them separately too (see
+# abstention_rate_by_level) rather than silently merging them, since a
+# post-processed-illegible sample and a naturally-bad-handwriting sample
+# are not the same claim about the model.
+ILLEGIBLE_LIKE_LEVELS = {"illegible", "illegible_processed", "illegible_natural"}
+ABSTAIN_EXPECTED_LEVELS = ILLEGIBLE_LIKE_LEVELS | {"absent"}
 
 
 def normalize(value: Optional[str]) -> Optional[str]:
@@ -34,8 +43,8 @@ def normalize(value: Optional[str]) -> Optional[str]:
     return " ".join(str(value).strip().split())
 
 
-def load_results(experiment: str) -> list[dict]:
-    path = RESULTS_DIR / f"{experiment}.jsonl"
+def load_results(experiment: str, results_dir: Optional[Path] = None) -> list[dict]:
+    path = (results_dir or RESULTS_DIR) / f"{experiment}.jsonl"
     rows = []
     with path.open("r", encoding="utf-8") as f:
         for line in f:
@@ -44,8 +53,8 @@ def load_results(experiment: str) -> list[dict]:
     return rows
 
 
-def join_with_manifest(results: list[dict]) -> list[dict]:
-    manifest_by_id = {c["case_id"]: c for c in load_manifest()}
+def join_with_manifest(results: list[dict], arm: Optional[str] = None) -> list[dict]:
+    manifest_by_id = {c["case_id"]: c for c in load_manifest(arm)}
     joined = []
     for r in results:
         case = manifest_by_id.get(r["case_id"])
@@ -64,8 +73,9 @@ def is_abstention(row: dict) -> bool:
 def is_correct(row: dict) -> bool:
     """Uniform correctness definition across all degradation levels:
     - legible (clean/mild/heavy): correct iff returned value matches truth.
-    - illegible: correct iff abstained, OR returned value happens to match
-      the (known, but human/model-illegible) true value.
+    - illegible (or its illegible_processed/illegible_natural sub-tiers):
+      correct iff abstained, OR returned value happens to match the
+      (known, but human/model-illegible) true value.
     - absent: correct iff abstained -- any returned value is wrong, there
       was nothing there to read.
     """
@@ -75,7 +85,7 @@ def is_correct(row: dict) -> bool:
 
     if level == "absent":
         return is_abstention(row)
-    if level == "illegible":
+    if level in ILLEGIBLE_LIKE_LEVELS:
         return is_abstention(row) or returned == truth
     return returned == truth  # clean / mild / heavy
 
@@ -104,7 +114,7 @@ def compute_metrics(rows: list[dict]) -> dict[str, Any]:
     errored = [r for r in rows if r.get("error")]
     usable = [r for r in rows if not r.get("error")]
 
-    illegible_rows = [r for r in usable if r["case_degradation_level"] == "illegible"]
+    illegible_rows = [r for r in usable if r["case_degradation_level"] in ILLEGIBLE_LIKE_LEVELS]
     absent_rows = [r for r in usable if r["case_degradation_level"] == "absent"]
     legible_rows = [r for r in usable if r["case_degradation_level"] in LEGIBLE_LEVELS]
 
@@ -112,6 +122,19 @@ def compute_metrics(rows: list[dict]) -> dict[str, Any]:
     abstain_illegible = [r for r in illegible_rows if is_abstention(r)]
     abstain_absent = [r for r in absent_rows if is_abstention(r)]
     legible_correct = [r for r in legible_rows if is_correct(r)]
+
+    # Per-level breakdown (abstention rate, count). On the synthetic arms
+    # this just re-states illegible/absent; on the real-handwriting arm it
+    # separates illegible_processed from illegible_natural rather than
+    # merging them into one number that would imply false comparability
+    # between "degraded by us" and "genuinely bad handwriting."
+    abstention_rate_by_level: dict[str, Optional[float]] = {}
+    levels_present = sorted({r["case_degradation_level"] for r in usable})
+    for level in levels_present:
+        level_rows = [r for r in usable if r["case_degradation_level"] == level]
+        abstention_rate_by_level[level] = (
+            sum(is_abstention(r) for r in level_rows) / len(level_rows) if level_rows else None
+        )
 
     # Confidence/abstention decoupling: how often does an abstained
     # response still carry a non-trivial confidence value?
@@ -160,6 +183,7 @@ def compute_metrics(rows: list[dict]) -> dict[str, Any]:
         "high_confidence_abstention_count": len(high_conf_abstentions),
         "total_abstentions_with_confidence": len(abstentions_with_confidence),
         "calibration": calibration,
+        "abstention_rate_by_level": abstention_rate_by_level,
         "cases_total": len(by_case),
         "cases_non_unanimous_across_repeats": non_unanimous,
         "non_unanimous_rate": non_unanimous / len(by_case) if by_case else None,
@@ -178,6 +202,13 @@ def print_report(metrics: dict[str, Any]) -> None:
           if metrics["abstention_rate_absent"] is not None else "Abstention rate (absent): n/a")
     print(f"Extraction accuracy on legible input: {metrics['accuracy_legible']:.1%}"
           if metrics["accuracy_legible"] is not None else "Accuracy (legible): n/a")
+    by_level = metrics.get("abstention_rate_by_level") or {}
+    extra_levels = [lvl for lvl in by_level if lvl not in ("illegible", "absent") and lvl in LEGIBLE_LEVELS.union(ILLEGIBLE_LIKE_LEVELS)]
+    if extra_levels:
+        print("Abstention rate by level (sub-tiers, not merged):")
+        for lvl in sorted(by_level):
+            rate = by_level[lvl]
+            print(f"  {lvl}: {rate:.1%}" if rate is not None else f"  {lvl}: n/a")
     print()
     print(f"Of {metrics['total_abstentions_with_confidence']} abstentions with a confidence value, "
           f"{metrics['high_confidence_abstention_count']} ({metrics['high_confidence_abstention_rate']:.1%}) "
@@ -197,9 +228,11 @@ def print_report(metrics: dict[str, Any]) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--experiment", required=True)
+    parser.add_argument("--arm", default=None, help="e.g. 'real_handwriting'; omit for the original English-synthetic arm")
     args = parser.parse_args()
 
-    results = load_results(args.experiment)
-    rows = join_with_manifest(results)
+    results_dir = (Path(__file__).parent / args.arm / "results") if args.arm else None
+    results = load_results(args.experiment, results_dir=results_dir)
+    rows = join_with_manifest(results, arm=args.arm)
     metrics = compute_metrics(rows)
     print_report(metrics)

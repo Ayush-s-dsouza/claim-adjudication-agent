@@ -35,40 +35,48 @@ from eval.collect import run_experiment as collect_run_experiment
 from eval.metrics import compute_metrics, is_abstention, is_correct, join_with_manifest, load_results, normalize
 from eval.splits import load_split
 
-RESULTS_DIR = Path(__file__).parent / "results"
-EXPERIMENT_LOG_PATH = RESULTS_DIR / "experiment_log.jsonl"
+BASE_DIR = Path(__file__).parent
 
 ACCEPT_THRESHOLD_POINTS = 2.0  # percentage points; smaller deltas are treated as noise
 MAX_ACCEPTED = 6
 MAX_EXPERIMENTS = 12
 
 
-def load_experiment_log() -> list[dict]:
-    if not EXPERIMENT_LOG_PATH.exists():
+def _results_dir(arm: Optional[str] = None) -> Path:
+    return (BASE_DIR / arm / "results") if arm else (BASE_DIR / "results")
+
+
+def _experiment_log_path(arm: Optional[str] = None) -> Path:
+    return _results_dir(arm) / "experiment_log.jsonl"
+
+
+def load_experiment_log(arm: Optional[str] = None) -> list[dict]:
+    path = _experiment_log_path(arm)
+    if not path.exists():
         return []
-    with EXPERIMENT_LOG_PATH.open("r", encoding="utf-8") as f:
+    with path.open("r", encoding="utf-8") as f:
         return [json.loads(line) for line in f if line.strip()]
 
 
-def append_experiment_log(entry: dict) -> None:
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    with EXPERIMENT_LOG_PATH.open("a", encoding="utf-8") as f:
+def append_experiment_log(entry: dict, arm: Optional[str] = None) -> None:
+    _results_dir(arm).mkdir(parents=True, exist_ok=True)
+    with _experiment_log_path(arm).open("a", encoding="utf-8") as f:
         f.write(json.dumps(entry) + "\n")
 
 
-def validation_only_metrics(experiment: str) -> dict[str, Any]:
+def validation_only_metrics(experiment: str, arm: Optional[str] = None) -> dict[str, Any]:
     """Metrics for one experiment's results, scoped to the validation split
     only -- this is the number Phase 3 decisions are gated on."""
-    results = load_results(experiment)
-    rows = join_with_manifest(results)
+    results = load_results(experiment, results_dir=_results_dir(arm))
+    rows = join_with_manifest(results, arm=arm)
     validation_rows = [r for r in rows if r.get("case_split") == "validation"]
     return compute_metrics(validation_rows)
 
 
-def check_budget() -> tuple[int, int]:
+def check_budget(arm: Optional[str] = None) -> tuple[int, int]:
     """Returns (experiments_run, accepted_count). Raises if either cap is
     already hit -- called before starting a new experiment, not after."""
-    log = load_experiment_log()
+    log = load_experiment_log(arm)
     experiments_run = len(log)
     accepted = sum(1 for e in log if e["decision"] == "accept")
     if experiments_run >= MAX_EXPERIMENTS:
@@ -101,16 +109,18 @@ def decide(baseline: dict, candidate: dict) -> tuple[str, str]:
     return "accept", f"fabrication_rate improved {fab_delta_points:.1f} points, accuracy_legible delta {acc_delta_points:.1f} points -- within tolerance"
 
 
-def run_next_experiment(name: str, hypothesis: str, extra_instruction: str, n_repeats: int = 5) -> dict:
+def run_next_experiment(
+    name: str, hypothesis: str, extra_instruction: str, n_repeats: int = 5, arm: Optional[str] = None
+) -> dict:
     """Runs one Phase 3 experiment: validation set only, with the given
     schema-description change, compared against the frozen baseline."""
-    experiments_run, accepted = check_budget()
+    experiments_run, accepted = check_budget(arm)
 
-    baseline = validation_only_metrics("baseline")
-    validation_cases = load_split("validation")
-    out_path = RESULTS_DIR / f"{name}.jsonl"
+    baseline = validation_only_metrics("baseline", arm)
+    validation_cases = load_split("validation", arm=arm)
+    out_path = _results_dir(arm) / f"{name}.jsonl"
     collect_run_experiment(validation_cases, name, extra_instruction=extra_instruction, n_repeats=n_repeats, out_path=out_path)
-    candidate = validation_only_metrics(name)
+    candidate = validation_only_metrics(name, arm)
 
     decision, reason = decide(baseline, candidate)
     entry = {
@@ -126,20 +136,20 @@ def run_next_experiment(name: str, hypothesis: str, extra_instruction: str, n_re
         "decision": decision,
         "reason": reason,
     }
-    append_experiment_log(entry)
+    append_experiment_log(entry, arm)
     return {"baseline": baseline, "candidate": candidate, "decision_entry": entry}
 
 
-def run_self_consistency_experiment(name: str, k: int, n: int = 5) -> dict:
+def run_self_consistency_experiment(name: str, k: int, n: int = 5, arm: Optional[str] = None) -> dict:
     """Hypothesis 2: self-consistency, computed from EXISTING baseline data
     -- no new API calls. Re-aggregates baseline's already-collected 5
     repeats per case under a "return value only if >= k of n agree,
     otherwise abstain" rule, then scores that aggregated policy exactly
     like any other experiment."""
-    experiments_run, accepted = check_budget()
+    experiments_run, accepted = check_budget(arm)
 
-    baseline_results = load_results("baseline")
-    baseline_rows = join_with_manifest(baseline_results)
+    baseline_results = load_results("baseline", results_dir=_results_dir(arm))
+    baseline_rows = join_with_manifest(baseline_results, arm=arm)
     validation_rows = [r for r in baseline_rows if r.get("case_split") == "validation"]
 
     baseline_metrics = compute_metrics(validation_rows)
@@ -185,12 +195,12 @@ def run_self_consistency_experiment(name: str, k: int, n: int = 5) -> dict:
         "decision": decision,
         "reason": reason,
     }
-    append_experiment_log(entry)
+    append_experiment_log(entry, arm)
     return {"baseline": baseline_metrics, "candidate": candidate_metrics, "decision_entry": entry}
 
 
-def print_status() -> None:
-    log = load_experiment_log()
+def print_status(arm: Optional[str] = None) -> None:
+    log = load_experiment_log(arm)
     accepted = [e for e in log if e["decision"] == "accept"]
     print(f"Experiments run: {len(log)}/{MAX_EXPERIMENTS}  Accepted: {len(accepted)}/{MAX_ACCEPTED}")
     for e in log:
@@ -199,6 +209,7 @@ def print_status() -> None:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("--arm", default=None, help="e.g. 'real_handwriting'; omit for the original English-synthetic arm")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     p_run = sub.add_parser("run")
@@ -216,10 +227,10 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     if args.cmd == "run":
-        result = run_next_experiment(args.name, args.hypothesis, args.extra_instruction, args.repeats)
+        result = run_next_experiment(args.name, args.hypothesis, args.extra_instruction, args.repeats, arm=args.arm)
         print(json.dumps(result["decision_entry"], indent=2))
     elif args.cmd == "self-consistency":
-        result = run_self_consistency_experiment(args.name, args.k, args.n)
+        result = run_self_consistency_experiment(args.name, args.k, args.n, arm=args.arm)
         print(json.dumps(result["decision_entry"], indent=2))
     elif args.cmd == "status":
-        print_status()
+        print_status(arm=args.arm)
