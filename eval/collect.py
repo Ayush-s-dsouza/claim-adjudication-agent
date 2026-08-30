@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import sys
 import time
 from collections import deque
 from datetime import datetime, timezone
@@ -28,6 +29,16 @@ from dotenv import load_dotenv
 from sarvamai import SarvamAI
 
 from eval.splits import load_split
+
+# Sarvam can return non-ASCII output (observed: a run of U+2588 FULL BLOCK
+# characters on an illegible field) that crashes a plain print() on
+# Windows' default cp1252 console encoding. The JSONL log always writes
+# UTF-8 regardless (see run_experiment) -- this only affects the progress
+# print, so make it tolerant rather than let a console-encoding quirk kill
+# an otherwise-fine multi-hour run.
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(errors="backslashreplace")
 
 RESULTS_DIR = Path(__file__).parent / "results"
 
