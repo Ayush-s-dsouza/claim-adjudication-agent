@@ -6,3 +6,5 @@ venv/
 *.egg-info/
 .pytest_cache/
 audit_logs/
+DECISION_LOG.md
+eval/results/
