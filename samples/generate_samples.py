@@ -45,15 +45,44 @@ def center_text(draw: ImageDraw.ImageDraw, y: int, text: str, font: ImageFont.Fr
 
 def draw_field(
     draw: ImageDraw.ImageDraw, x: int, y: int, label: str, value: str, handwritten: bool = False
-) -> None:
+) -> tuple[int, int, int, int]:
+    """Draws a label: value pair and returns the value text's bounding box,
+    so callers can target that exact region for localized degradation."""
     label_text = f"{label}:"
     draw.text((x, y), label_text, font=label_font, fill=INK)
     bbox = draw.textbbox((0, 0), label_text + "  ", font=label_font)
     value_x = x + (bbox[2] - bbox[0])
     if handwritten:
         draw.text((value_x, y - 3), value, font=hand_font, fill=HAND_INK)
+        return draw.textbbox((value_x, y - 3), value, font=hand_font)
     else:
         draw.text((value_x, y), value, font=value_font, fill=INK)
+        return draw.textbbox((value_x, y), value, font=value_font)
+
+
+def degrade_region(
+    img: Image.Image, box: tuple[int, int, int, int], pixelate_factor: int = 10, blur_radius: float = 6.0, noise_sigma: float = 55.0
+) -> Image.Image:
+    """Heavily degrade one rectangular region in place: pixelate, blur, add
+    noise. Simulates a smudge, crease, or water damage over a single field,
+    rather than a whole-document scan issue -- everything else on the page
+    stays crisp so this tests "one ambiguous field", not "whole page is bad"."""
+    x0, y0, x1, y1 = (int(box[0]) - 6, int(box[1]) - 6, int(box[2]) + 6, int(box[3]) + 6)
+    x0, y0 = max(x0, 0), max(y0, 0)
+    x1, y1 = min(x1, img.width), min(y1, img.height)
+    region = img.crop((x0, y0, x1, y1))
+    w, h = region.size
+    if w < 1 or h < 1:
+        return img
+    small = region.resize((max(1, w // pixelate_factor), max(1, h // pixelate_factor)), Image.BILINEAR)
+    region = small.resize((w, h), Image.NEAREST)
+    region = region.filter(ImageFilter.GaussianBlur(radius=blur_radius))
+    arr = np.asarray(region).astype(np.float32)
+    noise = np.random.default_rng(7).normal(0, noise_sigma, arr.shape)
+    arr = np.clip(arr + noise, 0, 255).astype(np.uint8)
+    region = Image.fromarray(arr)
+    img.paste(region, (x0, y0))
+    return img
 
 
 def apply_scan_artifacts(img: Image.Image, rotation_deg: float = 2.4, noise_sigma: float = 22.0) -> Image.Image:
@@ -97,6 +126,7 @@ def death_certificate(
     issuing_authority: str,
     date_of_registration: str,
     scanned: bool = False,
+    degrade_field: str | None = None,
 ) -> None:
     img = new_page()
     draw = ImageDraw.Draw(img)
@@ -109,16 +139,21 @@ def death_certificate(
     draw.line([100, 205, CANVAS_SIZE[0] - 100, 205], fill=INK, width=2)
 
     y = 260
-    for label, value in [
-        ("Registration No.", registration_number),
-        ("Name of Deceased", deceased_name),
-        ("Sex", "Male"),
-        ("Date of Death", date_of_death),
-        ("Place of Death", place_of_death),
-        ("Date of Registration", date_of_registration),
+    field_boxes: dict[str, tuple[int, int, int, int]] = {}
+    for key, label, value in [
+        ("registration_number", "Registration No.", registration_number),
+        ("deceased_name", "Name of Deceased", deceased_name),
+        ("sex", "Sex", "Male"),
+        ("date_of_death", "Date of Death", date_of_death),
+        ("place_of_death", "Place of Death", place_of_death),
+        ("date_of_registration", "Date of Registration", date_of_registration),
     ]:
-        draw_field(draw, 100, y, label, value)
+        field_boxes[key] = draw_field(draw, 100, y, label, value)
         y += 65
+
+    if degrade_field is not None:
+        img = degrade_region(img, field_boxes[degrade_field])
+        draw = ImageDraw.Draw(img)
 
     draw.line([100, y + 20, CANVAS_SIZE[0] - 100, y + 20], fill=INK, width=1)
     center_text(
@@ -280,9 +315,13 @@ def build_claim_001() -> None:
 
 def build_claim_002() -> None:
     """Messy claim: nominee KYC missing entirely, deceased's name spelled
-    differently on the discharge summary, cause of death handwritten, and
-    the death certificate has scan artifacts. Should come out NOT
-    decision-ready with a specific chase list."""
+    differently on the discharge summary, cause of death handwritten, the
+    death certificate has scan artifacts, and its place-of-death field is
+    additionally smudged (heavy localized pixelation/blur/noise) to test
+    whether Sarvam actually returns a low-confidence value for a genuinely
+    hard-to-read field, rather than just guessing high confidence for
+    everything. Should come out NOT decision-ready with a specific chase
+    list."""
     claim_dir = OUT_DIR / "claim_002"
     claim_dir.mkdir(exist_ok=True)
 
@@ -295,6 +334,7 @@ def build_claim_002() -> None:
         issuing_authority="Municipal Corporation of Greater Mumbai",
         date_of_registration="15-03-2026",
         scanned=True,
+        degrade_field="place_of_death",
     )
     hospital_discharge_summary(
         claim_dir / "hospital_discharge_summary.png",
