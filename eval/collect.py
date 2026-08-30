@@ -187,8 +187,8 @@ def run_experiment(
     client = SarvamAI(api_subscription_key=os.environ["SARVAM_API_KEY"])
     limiter = RateLimiter(max_per_minute=10)
 
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     out_path = out_path or (RESULTS_DIR / f"{experiment}.jsonl")
+    out_path.parent.mkdir(parents=True, exist_ok=True)
     already_done = load_already_done(out_path)
 
     total = len(cases) * n_repeats
@@ -216,11 +216,13 @@ if __name__ == "__main__":
     parser.add_argument("--split", nargs="+", default=["tune", "validation"])
     parser.add_argument("--repeats", type=int, default=5)
     parser.add_argument("--extra-instruction", default="")
+    parser.add_argument("--arm", default=None, help="e.g. 'synth_devanagari' or 'real_handwriting'; omit for the original English-synthetic arm")
     args = parser.parse_args()
 
     all_cases = []
     for split in args.split:
-        all_cases.extend(load_split(split))
+        all_cases.extend(load_split(split, arm=args.arm))
 
-    out_path = run_experiment(all_cases, args.experiment, args.extra_instruction, args.repeats)
+    out_path = (RESULTS_DIR.parent / args.arm / "results" / f"{args.experiment}.jsonl") if args.arm else None
+    out_path = run_experiment(all_cases, args.experiment, args.extra_instruction, args.repeats, out_path=out_path)
     print(f"done -- results in {out_path}")
