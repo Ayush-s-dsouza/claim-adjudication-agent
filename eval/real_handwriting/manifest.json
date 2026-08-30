@@ -1,0 +1,842 @@
+[
+  {
+    "case_id": "name_0_clean",
+    "field_type": "name",
+    "value_index": 0,
+    "degradation_level": "clean",
+    "true_value": "शोभना",
+    "image_path": "cases/name_0_clean.png",
+    "source_path": "HindiSeg/train/8/148/18.jpg",
+    "split": "validation"
+  },
+  {
+    "case_id": "name_0_mild",
+    "field_type": "name",
+    "value_index": 0,
+    "degradation_level": "mild",
+    "true_value": "शोभना",
+    "image_path": "cases/name_0_mild.png",
+    "source_path": "HindiSeg/train/8/148/18.jpg",
+    "split": "test"
+  },
+  {
+    "case_id": "name_0_heavy",
+    "field_type": "name",
+    "value_index": 0,
+    "degradation_level": "heavy",
+    "true_value": "शोभना",
+    "image_path": "cases/name_0_heavy.png",
+    "source_path": "HindiSeg/train/8/148/18.jpg",
+    "split": "test"
+  },
+  {
+    "case_id": "name_0_illegible_processed",
+    "field_type": "name",
+    "value_index": 0,
+    "degradation_level": "illegible_processed",
+    "true_value": "शोभना",
+    "image_path": "cases/name_0_illegible_processed.png",
+    "source_path": "HindiSeg/train/8/148/18.jpg",
+    "split": "validation"
+  },
+  {
+    "case_id": "name_0_absent",
+    "field_type": "name",
+    "value_index": 0,
+    "degradation_level": "absent",
+    "true_value": null,
+    "image_path": "cases/name_0_absent.png",
+    "source_path": "HindiSeg/train/8/148/18.jpg",
+    "split": "tune"
+  },
+  {
+    "case_id": "name_1_clean",
+    "field_type": "name",
+    "value_index": 1,
+    "degradation_level": "clean",
+    "true_value": "जहाँगीर",
+    "image_path": "cases/name_1_clean.png",
+    "source_path": "HindiSeg/train/4/165/7.jpg",
+    "split": "test"
+  },
+  {
+    "case_id": "name_1_mild",
+    "field_type": "name",
+    "value_index": 1,
+    "degradation_level": "mild",
+    "true_value": "जहाँगीर",
+    "image_path": "cases/name_1_mild.png",
+    "source_path": "HindiSeg/train/4/165/7.jpg",
+    "split": "tune"
+  },
+  {
+    "case_id": "name_1_heavy",
+    "field_type": "name",
+    "value_index": 1,
+    "degradation_level": "heavy",
+    "true_value": "जहाँगीर",
+    "image_path": "cases/name_1_heavy.png",
+    "source_path": "HindiSeg/train/4/165/7.jpg",
+    "split": "tune"
+  },
+  {
+    "case_id": "name_1_illegible_processed",
+    "field_type": "name",
+    "value_index": 1,
+    "degradation_level": "illegible_processed",
+    "true_value": "जहाँगीर",
+    "image_path": "cases/name_1_illegible_processed.png",
+    "source_path": "HindiSeg/train/4/165/7.jpg",
+    "split": "test"
+  },
+  {
+    "case_id": "name_1_absent",
+    "field_type": "name",
+    "value_index": 1,
+    "degradation_level": "absent",
+    "true_value": null,
+    "image_path": "cases/name_1_absent.png",
+    "source_path": "HindiSeg/train/4/165/7.jpg",
+    "split": "validation"
+  },
+  {
+    "case_id": "name_2_clean",
+    "field_type": "name",
+    "value_index": 2,
+    "degradation_level": "clean",
+    "true_value": "अखिलेश",
+    "image_path": "cases/name_2_clean.png",
+    "source_path": "HindiSeg/train/2/130/8.jpg",
+    "split": "tune"
+  },
+  {
+    "case_id": "name_2_mild",
+    "field_type": "name",
+    "value_index": 2,
+    "degradation_level": "mild",
+    "true_value": "अखिलेश",
+    "image_path": "cases/name_2_mild.png",
+    "source_path": "HindiSeg/train/2/130/8.jpg",
+    "split": "validation"
+  },
+  {
+    "case_id": "name_2_heavy",
+    "field_type": "name",
+    "value_index": 2,
+    "degradation_level": "heavy",
+    "true_value": "अखिलेश",
+    "image_path": "cases/name_2_heavy.png",
+    "source_path": "HindiSeg/train/2/130/8.jpg",
+    "split": "validation"
+  },
+  {
+    "case_id": "name_2_illegible_processed",
+    "field_type": "name",
+    "value_index": 2,
+    "degradation_level": "illegible_processed",
+    "true_value": "अखिलेश",
+    "image_path": "cases/name_2_illegible_processed.png",
+    "source_path": "HindiSeg/train/2/130/8.jpg",
+    "split": "tune"
+  },
+  {
+    "case_id": "name_2_absent",
+    "field_type": "name",
+    "value_index": 2,
+    "degradation_level": "absent",
+    "true_value": null,
+    "image_path": "cases/name_2_absent.png",
+    "source_path": "HindiSeg/train/2/130/8.jpg",
+    "split": "test"
+  },
+  {
+    "case_id": "name_3_clean",
+    "field_type": "name",
+    "value_index": 3,
+    "degradation_level": "clean",
+    "true_value": "वसुंधरा",
+    "image_path": "cases/name_3_clean.png",
+    "source_path": "HindiSeg/train/5/209/21.jpg",
+    "split": "validation"
+  },
+  {
+    "case_id": "name_3_mild",
+    "field_type": "name",
+    "value_index": 3,
+    "degradation_level": "mild",
+    "true_value": "वसुंधरा",
+    "image_path": "cases/name_3_mild.png",
+    "source_path": "HindiSeg/train/5/209/21.jpg",
+    "split": "test"
+  },
+  {
+    "case_id": "name_3_heavy",
+    "field_type": "name",
+    "value_index": 3,
+    "degradation_level": "heavy",
+    "true_value": "वसुंधरा",
+    "image_path": "cases/name_3_heavy.png",
+    "source_path": "HindiSeg/train/5/209/21.jpg",
+    "split": "test"
+  },
+  {
+    "case_id": "name_3_illegible_processed",
+    "field_type": "name",
+    "value_index": 3,
+    "degradation_level": "illegible_processed",
+    "true_value": "वसुंधरा",
+    "image_path": "cases/name_3_illegible_processed.png",
+    "source_path": "HindiSeg/train/5/209/21.jpg",
+    "split": "validation"
+  },
+  {
+    "case_id": "name_3_absent",
+    "field_type": "name",
+    "value_index": 3,
+    "degradation_level": "absent",
+    "true_value": null,
+    "image_path": "cases/name_3_absent.png",
+    "source_path": "HindiSeg/train/5/209/21.jpg",
+    "split": "tune"
+  },
+  {
+    "case_id": "name_4_clean",
+    "field_type": "name",
+    "value_index": 4,
+    "degradation_level": "clean",
+    "true_value": "व्यास",
+    "image_path": "cases/name_4_clean.png",
+    "source_path": "HindiSeg/train/10/250/26.jpg",
+    "split": "test"
+  },
+  {
+    "case_id": "name_4_mild",
+    "field_type": "name",
+    "value_index": 4,
+    "degradation_level": "mild",
+    "true_value": "व्यास",
+    "image_path": "cases/name_4_mild.png",
+    "source_path": "HindiSeg/train/10/250/26.jpg",
+    "split": "tune"
+  },
+  {
+    "case_id": "name_4_heavy",
+    "field_type": "name",
+    "value_index": 4,
+    "degradation_level": "heavy",
+    "true_value": "व्यास",
+    "image_path": "cases/name_4_heavy.png",
+    "source_path": "HindiSeg/train/10/250/26.jpg",
+    "split": "tune"
+  },
+  {
+    "case_id": "name_4_illegible_processed",
+    "field_type": "name",
+    "value_index": 4,
+    "degradation_level": "illegible_processed",
+    "true_value": "व्यास",
+    "image_path": "cases/name_4_illegible_processed.png",
+    "source_path": "HindiSeg/train/10/250/26.jpg",
+    "split": "test"
+  },
+  {
+    "case_id": "name_4_absent",
+    "field_type": "name",
+    "value_index": 4,
+    "degradation_level": "absent",
+    "true_value": null,
+    "image_path": "cases/name_4_absent.png",
+    "source_path": "HindiSeg/train/10/250/26.jpg",
+    "split": "validation"
+  },
+  {
+    "case_id": "name_5_clean",
+    "field_type": "name",
+    "value_index": 5,
+    "degradation_level": "clean",
+    "true_value": "जितेन्द्र",
+    "image_path": "cases/name_5_clean.png",
+    "source_path": "HindiSeg/train/8/161/32.jpg",
+    "split": "tune"
+  },
+  {
+    "case_id": "name_5_mild",
+    "field_type": "name",
+    "value_index": 5,
+    "degradation_level": "mild",
+    "true_value": "जितेन्द्र",
+    "image_path": "cases/name_5_mild.png",
+    "source_path": "HindiSeg/train/8/161/32.jpg",
+    "split": "tune"
+  },
+  {
+    "case_id": "name_5_heavy",
+    "field_type": "name",
+    "value_index": 5,
+    "degradation_level": "heavy",
+    "true_value": "जितेन्द्र",
+    "image_path": "cases/name_5_heavy.png",
+    "source_path": "HindiSeg/train/8/161/32.jpg",
+    "split": "validation"
+  },
+  {
+    "case_id": "name_5_illegible_processed",
+    "field_type": "name",
+    "value_index": 5,
+    "degradation_level": "illegible_processed",
+    "true_value": "जितेन्द्र",
+    "image_path": "cases/name_5_illegible_processed.png",
+    "source_path": "HindiSeg/train/8/161/32.jpg",
+    "split": "tune"
+  },
+  {
+    "case_id": "name_5_absent",
+    "field_type": "name",
+    "value_index": 5,
+    "degradation_level": "absent",
+    "true_value": null,
+    "image_path": "cases/name_5_absent.png",
+    "source_path": "HindiSeg/train/8/161/32.jpg",
+    "split": "test"
+  },
+  {
+    "case_id": "name_6_clean",
+    "field_type": "name",
+    "value_index": 6,
+    "degradation_level": "clean",
+    "true_value": "भरत",
+    "image_path": "cases/name_6_clean.png",
+    "source_path": "HindiSeg/train/8/252/17.jpg",
+    "split": "validation"
+  },
+  {
+    "case_id": "name_6_mild",
+    "field_type": "name",
+    "value_index": 6,
+    "degradation_level": "mild",
+    "true_value": "भरत",
+    "image_path": "cases/name_6_mild.png",
+    "source_path": "HindiSeg/train/8/252/17.jpg",
+    "split": "validation"
+  },
+  {
+    "case_id": "name_6_heavy",
+    "field_type": "name",
+    "value_index": 6,
+    "degradation_level": "heavy",
+    "true_value": "भरत",
+    "image_path": "cases/name_6_heavy.png",
+    "source_path": "HindiSeg/train/8/252/17.jpg",
+    "split": "test"
+  },
+  {
+    "case_id": "name_6_illegible_processed",
+    "field_type": "name",
+    "value_index": 6,
+    "degradation_level": "illegible_processed",
+    "true_value": "भरत",
+    "image_path": "cases/name_6_illegible_processed.png",
+    "source_path": "HindiSeg/train/8/252/17.jpg",
+    "split": "tune"
+  },
+  {
+    "case_id": "name_6_absent",
+    "field_type": "name",
+    "value_index": 6,
+    "degradation_level": "absent",
+    "true_value": null,
+    "image_path": "cases/name_6_absent.png",
+    "source_path": "HindiSeg/train/8/252/17.jpg",
+    "split": "tune"
+  },
+  {
+    "case_id": "name_7_clean",
+    "field_type": "name",
+    "value_index": 7,
+    "degradation_level": "clean",
+    "true_value": "प्रमोद",
+    "image_path": "cases/name_7_clean.png",
+    "source_path": "HindiSeg/train/5/183/15.jpg",
+    "split": "test"
+  },
+  {
+    "case_id": "name_7_mild",
+    "field_type": "name",
+    "value_index": 7,
+    "degradation_level": "mild",
+    "true_value": "प्रमोद",
+    "image_path": "cases/name_7_mild.png",
+    "source_path": "HindiSeg/train/5/183/15.jpg",
+    "split": "test"
+  },
+  {
+    "case_id": "name_7_heavy",
+    "field_type": "name",
+    "value_index": 7,
+    "degradation_level": "heavy",
+    "true_value": "प्रमोद",
+    "image_path": "cases/name_7_heavy.png",
+    "source_path": "HindiSeg/train/5/183/15.jpg",
+    "split": "tune"
+  },
+  {
+    "case_id": "name_7_illegible_processed",
+    "field_type": "name",
+    "value_index": 7,
+    "degradation_level": "illegible_processed",
+    "true_value": "प्रमोद",
+    "image_path": "cases/name_7_illegible_processed.png",
+    "source_path": "HindiSeg/train/5/183/15.jpg",
+    "split": "validation"
+  },
+  {
+    "case_id": "name_7_absent",
+    "field_type": "name",
+    "value_index": 7,
+    "degradation_level": "absent",
+    "true_value": null,
+    "image_path": "cases/name_7_absent.png",
+    "source_path": "HindiSeg/train/5/183/15.jpg",
+    "split": "validation"
+  },
+  {
+    "case_id": "name_natural0_illegible_natural",
+    "field_type": "name",
+    "value_index": 0,
+    "degradation_level": "illegible_natural",
+    "true_value": "राहुल",
+    "image_path": "cases/name_natural0_illegible_natural.png",
+    "source_path": "HindiSeg/train/10/234/23.jpg",
+    "split": "tune"
+  },
+  {
+    "case_id": "name_natural1_illegible_natural",
+    "field_type": "name",
+    "value_index": 1,
+    "degradation_level": "illegible_natural",
+    "true_value": "गौरी",
+    "image_path": "cases/name_natural1_illegible_natural.png",
+    "source_path": "HindiSeg/train/7/133/13.jpg",
+    "split": "validation"
+  },
+  {
+    "case_id": "typeset_0_clean",
+    "field_type": "typeset",
+    "value_index": 0,
+    "degradation_level": "clean",
+    "true_value": "स्वर्गीय",
+    "image_path": "cases/typeset_0_clean.png",
+    "source_path": "HindiSeg/train/5/225/11.jpg",
+    "split": "validation"
+  },
+  {
+    "case_id": "typeset_0_mild",
+    "field_type": "typeset",
+    "value_index": 0,
+    "degradation_level": "mild",
+    "true_value": "स्वर्गीय",
+    "image_path": "cases/typeset_0_mild.png",
+    "source_path": "HindiSeg/train/5/225/11.jpg",
+    "split": "validation"
+  },
+  {
+    "case_id": "typeset_0_heavy",
+    "field_type": "typeset",
+    "value_index": 0,
+    "degradation_level": "heavy",
+    "true_value": "स्वर्गीय",
+    "image_path": "cases/typeset_0_heavy.png",
+    "source_path": "HindiSeg/train/5/225/11.jpg",
+    "split": "test"
+  },
+  {
+    "case_id": "typeset_0_illegible_processed",
+    "field_type": "typeset",
+    "value_index": 0,
+    "degradation_level": "illegible_processed",
+    "true_value": "स्वर्गीय",
+    "image_path": "cases/typeset_0_illegible_processed.png",
+    "source_path": "HindiSeg/train/5/225/11.jpg",
+    "split": "tune"
+  },
+  {
+    "case_id": "typeset_0_absent",
+    "field_type": "typeset",
+    "value_index": 0,
+    "degradation_level": "absent",
+    "true_value": null,
+    "image_path": "cases/typeset_0_absent.png",
+    "source_path": "HindiSeg/train/5/225/11.jpg",
+    "split": "tune"
+  },
+  {
+    "case_id": "typeset_1_clean",
+    "field_type": "typeset",
+    "value_index": 1,
+    "degradation_level": "clean",
+    "true_value": "धनराशि",
+    "image_path": "cases/typeset_1_clean.png",
+    "source_path": "HindiSeg/train/8/172/2.jpg",
+    "split": "test"
+  },
+  {
+    "case_id": "typeset_1_mild",
+    "field_type": "typeset",
+    "value_index": 1,
+    "degradation_level": "mild",
+    "true_value": "धनराशि",
+    "image_path": "cases/typeset_1_mild.png",
+    "source_path": "HindiSeg/train/8/172/2.jpg",
+    "split": "test"
+  },
+  {
+    "case_id": "typeset_1_heavy",
+    "field_type": "typeset",
+    "value_index": 1,
+    "degradation_level": "heavy",
+    "true_value": "धनराशि",
+    "image_path": "cases/typeset_1_heavy.png",
+    "source_path": "HindiSeg/train/8/172/2.jpg",
+    "split": "tune"
+  },
+  {
+    "case_id": "typeset_1_illegible_processed",
+    "field_type": "typeset",
+    "value_index": 1,
+    "degradation_level": "illegible_processed",
+    "true_value": "धनराशि",
+    "image_path": "cases/typeset_1_illegible_processed.png",
+    "source_path": "HindiSeg/train/8/172/2.jpg",
+    "split": "validation"
+  },
+  {
+    "case_id": "typeset_1_absent",
+    "field_type": "typeset",
+    "value_index": 1,
+    "degradation_level": "absent",
+    "true_value": null,
+    "image_path": "cases/typeset_1_absent.png",
+    "source_path": "HindiSeg/train/8/172/2.jpg",
+    "split": "validation"
+  },
+  {
+    "case_id": "typeset_2_clean",
+    "field_type": "typeset",
+    "value_index": 2,
+    "degradation_level": "clean",
+    "true_value": "मरीजों",
+    "image_path": "cases/typeset_2_clean.png",
+    "source_path": "HindiSeg/train/10/125/29.jpg",
+    "split": "tune"
+  },
+  {
+    "case_id": "typeset_2_mild",
+    "field_type": "typeset",
+    "value_index": 2,
+    "degradation_level": "mild",
+    "true_value": "मरीजों",
+    "image_path": "cases/typeset_2_mild.png",
+    "source_path": "HindiSeg/train/10/125/29.jpg",
+    "split": "tune"
+  },
+  {
+    "case_id": "typeset_2_heavy",
+    "field_type": "typeset",
+    "value_index": 2,
+    "degradation_level": "heavy",
+    "true_value": "मरीजों",
+    "image_path": "cases/typeset_2_heavy.png",
+    "source_path": "HindiSeg/train/10/125/29.jpg",
+    "split": "tune"
+  },
+  {
+    "case_id": "typeset_2_illegible_processed",
+    "field_type": "typeset",
+    "value_index": 2,
+    "degradation_level": "illegible_processed",
+    "true_value": "मरीजों",
+    "image_path": "cases/typeset_2_illegible_processed.png",
+    "source_path": "HindiSeg/train/10/125/29.jpg",
+    "split": "test"
+  },
+  {
+    "case_id": "typeset_2_absent",
+    "field_type": "typeset",
+    "value_index": 2,
+    "degradation_level": "absent",
+    "true_value": null,
+    "image_path": "cases/typeset_2_absent.png",
+    "source_path": "HindiSeg/train/10/125/29.jpg",
+    "split": "test"
+  },
+  {
+    "case_id": "typeset_3_clean",
+    "field_type": "typeset",
+    "value_index": 3,
+    "degradation_level": "clean",
+    "true_value": "राष्ट्रीय",
+    "image_path": "cases/typeset_3_clean.png",
+    "source_path": "HindiSeg/train/8/52/2.jpg",
+    "split": "tune"
+  },
+  {
+    "case_id": "typeset_3_mild",
+    "field_type": "typeset",
+    "value_index": 3,
+    "degradation_level": "mild",
+    "true_value": "राष्ट्रीय",
+    "image_path": "cases/typeset_3_mild.png",
+    "source_path": "HindiSeg/train/8/52/2.jpg",
+    "split": "validation"
+  },
+  {
+    "case_id": "typeset_3_heavy",
+    "field_type": "typeset",
+    "value_index": 3,
+    "degradation_level": "heavy",
+    "true_value": "राष्ट्रीय",
+    "image_path": "cases/typeset_3_heavy.png",
+    "source_path": "HindiSeg/train/8/52/2.jpg",
+    "split": "validation"
+  },
+  {
+    "case_id": "typeset_3_illegible_processed",
+    "field_type": "typeset",
+    "value_index": 3,
+    "degradation_level": "illegible_processed",
+    "true_value": "राष्ट्रीय",
+    "image_path": "cases/typeset_3_illegible_processed.png",
+    "source_path": "HindiSeg/train/8/52/2.jpg",
+    "split": "tune"
+  },
+  {
+    "case_id": "typeset_3_absent",
+    "field_type": "typeset",
+    "value_index": 3,
+    "degradation_level": "absent",
+    "true_value": null,
+    "image_path": "cases/typeset_3_absent.png",
+    "source_path": "HindiSeg/train/8/52/2.jpg",
+    "split": "tune"
+  },
+  {
+    "case_id": "typeset_4_clean",
+    "field_type": "typeset",
+    "value_index": 4,
+    "degradation_level": "clean",
+    "true_value": "चयन",
+    "image_path": "cases/typeset_4_clean.png",
+    "source_path": "HindiSeg/train/5/305/23.jpg",
+    "split": "validation"
+  },
+  {
+    "case_id": "typeset_4_mild",
+    "field_type": "typeset",
+    "value_index": 4,
+    "degradation_level": "mild",
+    "true_value": "चयन",
+    "image_path": "cases/typeset_4_mild.png",
+    "source_path": "HindiSeg/train/5/305/23.jpg",
+    "split": "test"
+  },
+  {
+    "case_id": "typeset_4_heavy",
+    "field_type": "typeset",
+    "value_index": 4,
+    "degradation_level": "heavy",
+    "true_value": "चयन",
+    "image_path": "cases/typeset_4_heavy.png",
+    "source_path": "HindiSeg/train/5/305/23.jpg",
+    "split": "test"
+  },
+  {
+    "case_id": "typeset_4_illegible_processed",
+    "field_type": "typeset",
+    "value_index": 4,
+    "degradation_level": "illegible_processed",
+    "true_value": "चयन",
+    "image_path": "cases/typeset_4_illegible_processed.png",
+    "source_path": "HindiSeg/train/5/305/23.jpg",
+    "split": "validation"
+  },
+  {
+    "case_id": "typeset_4_absent",
+    "field_type": "typeset",
+    "value_index": 4,
+    "degradation_level": "absent",
+    "true_value": null,
+    "image_path": "cases/typeset_4_absent.png",
+    "source_path": "HindiSeg/train/5/305/23.jpg",
+    "split": "tune"
+  },
+  {
+    "case_id": "typeset_5_clean",
+    "field_type": "typeset",
+    "value_index": 5,
+    "degradation_level": "clean",
+    "true_value": "व्यापारियों",
+    "image_path": "cases/typeset_5_clean.png",
+    "source_path": "HindiSeg/train/4/149/11.jpg",
+    "split": "test"
+  },
+  {
+    "case_id": "typeset_5_mild",
+    "field_type": "typeset",
+    "value_index": 5,
+    "degradation_level": "mild",
+    "true_value": "व्यापारियों",
+    "image_path": "cases/typeset_5_mild.png",
+    "source_path": "HindiSeg/train/4/149/11.jpg",
+    "split": "tune"
+  },
+  {
+    "case_id": "typeset_5_heavy",
+    "field_type": "typeset",
+    "value_index": 5,
+    "degradation_level": "heavy",
+    "true_value": "व्यापारियों",
+    "image_path": "cases/typeset_5_heavy.png",
+    "source_path": "HindiSeg/train/4/149/11.jpg",
+    "split": "tune"
+  },
+  {
+    "case_id": "typeset_5_illegible_processed",
+    "field_type": "typeset",
+    "value_index": 5,
+    "degradation_level": "illegible_processed",
+    "true_value": "व्यापारियों",
+    "image_path": "cases/typeset_5_illegible_processed.png",
+    "source_path": "HindiSeg/train/4/149/11.jpg",
+    "split": "test"
+  },
+  {
+    "case_id": "typeset_5_absent",
+    "field_type": "typeset",
+    "value_index": 5,
+    "degradation_level": "absent",
+    "true_value": null,
+    "image_path": "cases/typeset_5_absent.png",
+    "source_path": "HindiSeg/train/4/149/11.jpg",
+    "split": "validation"
+  },
+  {
+    "case_id": "typeset_6_clean",
+    "field_type": "typeset",
+    "value_index": 6,
+    "degradation_level": "clean",
+    "true_value": "अनुशासन",
+    "image_path": "cases/typeset_6_clean.png",
+    "source_path": "HindiSeg/train/10/185/19.jpg",
+    "split": "tune"
+  },
+  {
+    "case_id": "typeset_6_mild",
+    "field_type": "typeset",
+    "value_index": 6,
+    "degradation_level": "mild",
+    "true_value": "अनुशासन",
+    "image_path": "cases/typeset_6_mild.png",
+    "source_path": "HindiSeg/train/10/185/19.jpg",
+    "split": "validation"
+  },
+  {
+    "case_id": "typeset_6_heavy",
+    "field_type": "typeset",
+    "value_index": 6,
+    "degradation_level": "heavy",
+    "true_value": "अनुशासन",
+    "image_path": "cases/typeset_6_heavy.png",
+    "source_path": "HindiSeg/train/10/185/19.jpg",
+    "split": "validation"
+  },
+  {
+    "case_id": "typeset_6_illegible_processed",
+    "field_type": "typeset",
+    "value_index": 6,
+    "degradation_level": "illegible_processed",
+    "true_value": "अनुशासन",
+    "image_path": "cases/typeset_6_illegible_processed.png",
+    "source_path": "HindiSeg/train/10/185/19.jpg",
+    "split": "tune"
+  },
+  {
+    "case_id": "typeset_6_absent",
+    "field_type": "typeset",
+    "value_index": 6,
+    "degradation_level": "absent",
+    "true_value": null,
+    "image_path": "cases/typeset_6_absent.png",
+    "source_path": "HindiSeg/train/10/185/19.jpg",
+    "split": "test"
+  },
+  {
+    "case_id": "typeset_7_clean",
+    "field_type": "typeset",
+    "value_index": 7,
+    "degradation_level": "clean",
+    "true_value": "जनकपुर",
+    "image_path": "cases/typeset_7_clean.png",
+    "source_path": "HindiSeg/train/8/32/13.jpg",
+    "split": "validation"
+  },
+  {
+    "case_id": "typeset_7_mild",
+    "field_type": "typeset",
+    "value_index": 7,
+    "degradation_level": "mild",
+    "true_value": "जनकपुर",
+    "image_path": "cases/typeset_7_mild.png",
+    "source_path": "HindiSeg/train/8/32/13.jpg",
+    "split": "test"
+  },
+  {
+    "case_id": "typeset_7_heavy",
+    "field_type": "typeset",
+    "value_index": 7,
+    "degradation_level": "heavy",
+    "true_value": "जनकपुर",
+    "image_path": "cases/typeset_7_heavy.png",
+    "source_path": "HindiSeg/train/8/32/13.jpg",
+    "split": "test"
+  },
+  {
+    "case_id": "typeset_7_illegible_processed",
+    "field_type": "typeset",
+    "value_index": 7,
+    "degradation_level": "illegible_processed",
+    "true_value": "जनकपुर",
+    "image_path": "cases/typeset_7_illegible_processed.png",
+    "source_path": "HindiSeg/train/8/32/13.jpg",
+    "split": "validation"
+  },
+  {
+    "case_id": "typeset_7_absent",
+    "field_type": "typeset",
+    "value_index": 7,
+    "degradation_level": "absent",
+    "true_value": null,
+    "image_path": "cases/typeset_7_absent.png",
+    "source_path": "HindiSeg/train/8/32/13.jpg",
+    "split": "tune"
+  },
+  {
+    "case_id": "typeset_natural0_illegible_natural",
+    "field_type": "typeset",
+    "value_index": 0,
+    "degradation_level": "illegible_natural",
+    "true_value": "अल्पसंख्यकों",
+    "image_path": "cases/typeset_natural0_illegible_natural.png",
+    "source_path": "HindiSeg/train/4/128/7.jpg",
+    "split": "tune"
+  },
+  {
+    "case_id": "typeset_natural1_illegible_natural",
+    "field_type": "typeset",
+    "value_index": 1,
+    "degradation_level": "illegible_natural",
+    "true_value": "कुंदेरा",
+    "image_path": "cases/typeset_natural1_illegible_natural.png",
+    "source_path": "HindiSeg/train/1/185/26.jpg",
+    "split": "tune"
+  }
+]
