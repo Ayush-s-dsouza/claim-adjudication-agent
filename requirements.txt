@@ -2,3 +2,4 @@ sarvamai==0.1.31
 pydantic==2.13.4
 python-dotenv==1.2.2
 Pillow==11.1.0
+numpy==2.2.3  # only used by samples/generate_samples.py, not the core pipeline
