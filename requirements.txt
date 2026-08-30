@@ -1,0 +1,4 @@
+sarvamai==0.1.31
+pydantic==2.13.4
+python-dotenv==1.2.2
+Pillow==11.1.0
