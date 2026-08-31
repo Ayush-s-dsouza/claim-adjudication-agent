@@ -110,7 +110,7 @@ def decide(baseline: dict, candidate: dict) -> tuple[str, str]:
 
 
 def run_next_experiment(
-    name: str, hypothesis: str, extra_instruction: str, n_repeats: int = 5, arm: Optional[str] = None
+    name: str, hypothesis: str, extra_instruction: str, n_repeats: int = 5, arm: Optional[str] = None, language: str = "en-IN"
 ) -> dict:
     """Runs one Phase 3 experiment: validation set only, with the given
     schema-description change, compared against the frozen baseline."""
@@ -119,7 +119,7 @@ def run_next_experiment(
     baseline = validation_only_metrics("baseline", arm)
     validation_cases = load_split("validation", arm=arm)
     out_path = _results_dir(arm) / f"{name}.jsonl"
-    collect_run_experiment(validation_cases, name, extra_instruction=extra_instruction, n_repeats=n_repeats, out_path=out_path)
+    collect_run_experiment(validation_cases, name, extra_instruction=extra_instruction, n_repeats=n_repeats, out_path=out_path, arm=arm, language=language)
     candidate = validation_only_metrics(name, arm)
 
     decision, reason = decide(baseline, candidate)
@@ -207,9 +207,12 @@ def print_status(arm: Optional[str] = None) -> None:
         print(f"  [{e['decision'].upper()}] {e['name']}: {e['reason']}")
 
 
+NON_ENGLISH_ARMS = {"synth_devanagari", "real_handwriting"}
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--arm", default=None, help="e.g. 'real_handwriting'; omit for the original English-synthetic arm")
+    parser.add_argument("--language", default="en-IN", help="BCP-47 code, e.g. hi-IN for the Devanagari arms")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     p_run = sub.add_parser("run")
@@ -226,8 +229,11 @@ if __name__ == "__main__":
     sub.add_parser("status")
 
     args = parser.parse_args()
+    if args.cmd == "run" and args.arm in NON_ENGLISH_ARMS and args.language == "en-IN":
+        parser.error(f"--arm {args.arm} requires --language to be passed explicitly (e.g. hi-IN), not left at the en-IN default")
+
     if args.cmd == "run":
-        result = run_next_experiment(args.name, args.hypothesis, args.extra_instruction, args.repeats, arm=args.arm)
+        result = run_next_experiment(args.name, args.hypothesis, args.extra_instruction, args.repeats, arm=args.arm, language=args.language)
         print(json.dumps(result["decision_entry"], indent=2))
     elif args.cmd == "self-consistency":
         result = run_self_consistency_experiment(args.name, args.k, args.n, arm=args.arm)

@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import unicodedata
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Optional
@@ -38,9 +39,17 @@ ABSTAIN_EXPECTED_LEVELS = ILLEGIBLE_LIKE_LEVELS | {"absent"}
 
 
 def normalize(value: Optional[str]) -> Optional[str]:
+    """Whitespace-collapse plus Unicode NFC normalization. The latter
+    matters specifically for Devanagari: ground-truth labels and Sarvam's
+    responses can represent the same visible glyph with different
+    codepoint sequences (e.g. precomposed U+095E "फ़" vs base consonant +
+    combining nukta U+092B U+093C) -- confirmed directly against a real
+    API response, not assumed. Without NFC normalization here, visually
+    and semantically identical strings compare unequal and get scored as
+    wrong, which would silently inflate every Devanagari-arm error rate."""
     if value is None:
         return None
-    return " ".join(str(value).strip().split())
+    return unicodedata.normalize("NFC", " ".join(str(value).strip().split()))
 
 
 def load_results(experiment: str, results_dir: Optional[Path] = None) -> list[dict]:

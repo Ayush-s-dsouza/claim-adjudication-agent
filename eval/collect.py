@@ -99,6 +99,7 @@ def run_case_once(
     language: str = "en-IN",
     poll_interval: float = 3.0,
     poll_timeout: float = 120.0,
+    arm: Optional[str] = None,
 ) -> dict:
     record: dict[str, Any] = {
         "experiment": experiment,
@@ -106,7 +107,16 @@ def run_case_once(
         "run_index": run_index,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
-    image_path = Path(__file__).parent / case["image_path"]
+    # image_path in the manifest is relative to that arm's own directory
+    # (e.g. "cases/name_0_clean.png" under eval/synth_devanagari/), NOT
+    # always eval/ -- resolving against the wrong base silently loaded a
+    # same-named file from a DIFFERENT arm instead of erroring (every arm
+    # shares the same case_id naming convention), corrupting an entire
+    # collection run without any error surfacing. Caught by manually
+    # spot-checking a returned value against its expected language, not by
+    # a crash -- this bug fix exists because that check was actually done.
+    base_dir = (Path(__file__).parent / arm) if arm else Path(__file__).parent
+    image_path = base_dir / case["image_path"]
     schema = build_schema(case["field_type"], extra_instruction)
 
     try:
@@ -182,6 +192,8 @@ def run_experiment(
     extra_instruction: str = "",
     n_repeats: int = 5,
     out_path: Optional[Path] = None,
+    arm: Optional[str] = None,
+    language: str = "en-IN",
 ) -> Path:
     load_dotenv()
     client = SarvamAI(api_subscription_key=os.environ["SARVAM_API_KEY"])
@@ -199,7 +211,7 @@ def run_experiment(
                 done_count += 1
                 if (case["case_id"], run_index) in already_done:
                     continue
-                record = run_case_once(client, limiter, case, run_index, experiment, extra_instruction)
+                record = run_case_once(client, limiter, case, run_index, experiment, extra_instruction, language=language, arm=arm)
                 f.write(json.dumps(record) + "\n")
                 f.flush()
                 print(
@@ -210,6 +222,11 @@ def run_experiment(
     return out_path
 
 
+# Arms whose document content isn't English -- language must be passed
+# explicitly for these, never left at the default, after the default
+# silently corrupted an entire Devanagari collection run (see run_case_once).
+NON_ENGLISH_ARMS = {"synth_devanagari", "real_handwriting"}
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--experiment", required=True)
@@ -217,12 +234,16 @@ if __name__ == "__main__":
     parser.add_argument("--repeats", type=int, default=5)
     parser.add_argument("--extra-instruction", default="")
     parser.add_argument("--arm", default=None, help="e.g. 'synth_devanagari' or 'real_handwriting'; omit for the original English-synthetic arm")
+    parser.add_argument("--language", default="en-IN", help="BCP-47 code, e.g. hi-IN for the Devanagari arms")
     args = parser.parse_args()
+
+    if args.arm in NON_ENGLISH_ARMS and args.language == "en-IN":
+        parser.error(f"--arm {args.arm} requires --language to be passed explicitly (e.g. hi-IN), not left at the en-IN default")
 
     all_cases = []
     for split in args.split:
         all_cases.extend(load_split(split, arm=args.arm))
 
     out_path = (RESULTS_DIR.parent / args.arm / "results" / f"{args.experiment}.jsonl") if args.arm else None
-    out_path = run_experiment(all_cases, args.experiment, args.extra_instruction, args.repeats, out_path=out_path)
+    out_path = run_experiment(all_cases, args.experiment, args.extra_instruction, args.repeats, out_path=out_path, arm=args.arm, language=args.language)
     print(f"done -- results in {out_path}")
