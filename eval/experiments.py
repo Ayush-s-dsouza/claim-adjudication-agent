@@ -187,7 +187,7 @@ def run_self_consistency_experiment(name: str, k: int, n: int = 5, arm: Optional
         "experiment_number": experiments_run + 1,
         "name": name,
         "hypothesis": f"Self-consistency: {k} of {n} repeats must agree, else abstain (computed from existing baseline data, 0 new API calls)",
-        "change": f"k={k}, n={n}, reused eval/results/baseline.jsonl",
+        "change": f"k={k}, n={n}, reused {_results_dir(arm) / 'baseline.jsonl'}",
         "baseline_fabrication_rate": baseline_metrics.get("fabrication_rate"),
         "candidate_fabrication_rate": candidate_metrics.get("fabrication_rate"),
         "baseline_accuracy_legible": baseline_metrics.get("accuracy_legible"),
