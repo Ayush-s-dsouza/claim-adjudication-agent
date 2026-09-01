@@ -140,22 +140,14 @@ def run_next_experiment(
     return {"baseline": baseline, "candidate": candidate, "decision_entry": entry}
 
 
-def run_self_consistency_experiment(name: str, k: int, n: int = 5, arm: Optional[str] = None) -> dict:
-    """Hypothesis 2: self-consistency, computed from EXISTING baseline data
-    -- no new API calls. Re-aggregates baseline's already-collected 5
-    repeats per case under a "return value only if >= k of n agree,
-    otherwise abstain" rule, then scores that aggregated policy exactly
-    like any other experiment."""
-    experiments_run, accepted = check_budget(arm)
-
-    baseline_results = load_results("baseline", results_dir=_results_dir(arm))
-    baseline_rows = join_with_manifest(baseline_results, arm=arm)
-    validation_rows = [r for r in baseline_rows if r.get("case_split") == "validation"]
-
-    baseline_metrics = compute_metrics(validation_rows)
-
+def apply_self_consistency(rows: list[dict], k: int, n: int) -> list[dict]:
+    """Re-aggregates repeated-call rows under a "return value only if >= k
+    of n agree, otherwise abstain" rule. Pure function, no side effects --
+    shared by Phase 3's gated experiment below and Phase 4's final report,
+    which must NOT touch decide() or the experiment log (it's a one-time
+    report, not another gated decision)."""
     by_case: dict[str, list[dict]] = defaultdict(list)
-    for r in validation_rows:
+    for r in rows:
         by_case[r["case_id"]].append(r)
 
     aggregated_rows = []
@@ -179,7 +171,23 @@ def run_self_consistency_experiment(name: str, k: int, n: int = 5, arm: Optional
             )
         else:
             aggregated_rows.append({**template, "returned_value": None, "confidence": None})
+    return aggregated_rows
 
+
+def run_self_consistency_experiment(name: str, k: int, n: int = 5, arm: Optional[str] = None) -> dict:
+    """Hypothesis 2: self-consistency, computed from EXISTING baseline data
+    -- no new API calls. Re-aggregates baseline's already-collected 5
+    repeats per case under a "return value only if >= k of n agree,
+    otherwise abstain" rule, then scores that aggregated policy exactly
+    like any other experiment."""
+    experiments_run, accepted = check_budget(arm)
+
+    baseline_results = load_results("baseline", results_dir=_results_dir(arm))
+    baseline_rows = join_with_manifest(baseline_results, arm=arm)
+    validation_rows = [r for r in baseline_rows if r.get("case_split") == "validation"]
+
+    baseline_metrics = compute_metrics(validation_rows)
+    aggregated_rows = apply_self_consistency(validation_rows, k, n)
     candidate_metrics = compute_metrics(aggregated_rows)
     decision, reason = decide(baseline_metrics, candidate_metrics)
     entry = {
