@@ -147,7 +147,8 @@ The [Key finding](#key-finding-confidence-10-does-not-mean-correct) above
 was too important to leave as a one-off anecdote from four API calls. This
 section is the full, disciplined investigation that followed: a frozen
 baseline, hypothesis testing gated against a pre-committed acceptance
-threshold, and a held-out test opened exactly once. All of it lives under
+threshold, and a held-out test unlocked as a single deliberate decision.
+All of it lives under
 `eval/` and is reproducible -- see [Reproducing this](#reproducing-this)
 at the end of this section.
 
@@ -336,8 +337,15 @@ not applied.
 ### Phase 4: held-out test, opened once
 
 `eval/splits.py::load_split('test', allow_test=True, arm='real_handwriting')`
--- opened exactly once, logged automatically to
-`eval/real_handwriting/TEST_SET_ACCESS_LOG.jsonl`.
+-- unlocked as a single deliberate decision, made once. The loader itself
+was invoked 3 times that afternoon (all logged, timestamps in
+`eval/real_handwriting/TEST_SET_ACCESS_LOG.jsonl`): once to confirm the
+lock actually opened, then twice more while resuming an interrupted
+125-call collection run. Each invocation just re-reads the same fixed
+25-case list -- no new information leaks per call, and none of it changed
+what got tested or how -- but "opened exactly once" would overstate the
+literal call count, so the log is committed as-is rather than summarized
+away.
 
 | Metric | Validation (raw) | Validation (self-consistency) | Test (raw) | **Test (self-consistency)** |
 |---|---|---|---|---|
