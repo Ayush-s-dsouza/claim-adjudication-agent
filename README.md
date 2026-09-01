@@ -70,6 +70,8 @@ sufficiency.py     <- deterministic rules, ZERO model calls
 audit.py          Append-only JSONL log, replayable per claim.
 run.py            CLI: wires the above together, makes no decisions itself.
 samples/          Synthetic sample claims + the script that generated them.
+eval/             Separate investigation: what does Sarvam's confidence
+                  score actually measure? See "Confidence diagnosis" below.
 ```
 
 The split that matters most: **extraction is a model call, sufficiency
@@ -138,6 +140,250 @@ dashboard for the real numbers.
   200MB across two pages) and free signup credit (₹100 vs ₹1,000 across two
   pages). Check your own dashboard rather than trusting either number here.
 - The SDK is pre-1.0 (`0.1.31`) -- the interface may change under it.
+
+## Confidence diagnosis: what it actually measures, what fixed it, what didn't
+
+The [Key finding](#key-finding-confidence-10-does-not-mean-correct) above
+was too important to leave as a one-off anecdote from four API calls. This
+section is the full, disciplined investigation that followed: a frozen
+baseline, hypothesis testing gated against a pre-committed acceptance
+threshold, and a held-out test opened exactly once. All of it lives under
+`eval/` and is reproducible -- see [Reproducing this](#reproducing-this)
+at the end of this section.
+
+### Phase 0: what does the confidence score actually measure?
+
+Checked before writing any diagnostic code, in the SDK source and Sarvam's
+own docs, not assumed:
+
+- **Undocumented everywhere that would normally define it.** The SDK types
+  `annotations` as an untyped `Dict[str, Any]`. The only definition
+  anywhere in Sarvam's own docs is *"a per-field score... showing how sure
+  Sarvam is about the value"* -- a self-assessment framing, not a
+  calibration claim, not a methodology.
+- **A near-miss worth recording**: an early search surfaced a plausible
+  citation claiming confidence is "for risk-aware prioritization, not
+  ground-truth correctness." Traced before repeating it -- the source
+  turned out to be an unrelated arXiv paper that doesn't mention Sarvam at
+  all. Flagging the near-miss here rather than quietly dropping it,
+  because almost repeating a fabricated-but-plausible citation is exactly
+  the failure mode this whole diagnosis is about.
+- **Structural findings that held up**: Digitise has a `content_type:
+  printed | handwritten | mixed` hint parameter; Extract has no
+  equivalent -- there's no way to even tell Extract a document might be
+  handwritten. Only one negative state exists in the API ("not found" = a
+  dash) -- no separate "present but illegible" status. No `required`/
+  `nullable` keyword in the schema DSL.
+- **Verdict**: confidence behaves like an uncalibrated, self-reported
+  model signal -- consistent with a Vision-Language Model architecture,
+  not classical OCR character-confidence -- not a correctness metric.
+
+### Phase 1-2: eval harness and the first baseline
+
+Built a 100-case stratified eval set (5 field types x 5 degradation levels
+x 4 values, `eval/generate_cases.py`), split 40/30/30 tune/validation/test
+with the test split locked in code (`eval/splits.py::load_split` raises
+unless `allow_test=True` is passed explicitly, and logs every access).
+Baseline result on this English-synthetic set, 5 repeats per case:
+
+- **Fabrication rate: 17.9%** (confident wrong answer on illegible/absent
+  input).
+- **Every one of 350 calls** reported confidence in `[0.8, 1.0)` -- no
+  spread at all. Within that single bucket, accuracy was 92.9%: confidence
+  has zero power to separate the correct 93% from the wrong 7%, because
+  everything lands in the same bucket regardless of correctness.
+- A single smoke-test case returned `value: null` (abstained) at
+  **confidence 0.997** -- confidence isn't just decoupled from
+  correctness, it's decoupled from *abstention* too. Confirmed at scale:
+  100% of 115 abstentions in the full baseline carried confidence >= 0.8.
+
+### The pivot: synthetic handwriting isn't real handwriting
+
+Everything above used a clean script *font* (Segoe Print) to simulate
+handwriting -- not genuine human handwriting. Since the pitch to Sarvam is
+specifically about residual risk on real Indic-script claims paperwork,
+that's a real gap: every number above measures how Sarvam handles a font
+renderer, not real handwriting. Investigated a pivot to real handwriting
+before assuming it was even feasible -- see below.
+
+### Real-handwriting arm: dataset, licensing, and what it actually tests
+
+**Dataset**: [IIIT-HW-Dev](https://cvit.iiit.ac.in/research/projects/cvit-projects/indic-hw-data)
+(~95K genuine handwritten Devanagari words, 135 writers), collected by
+CVIT, IIIT Hyderabad (Gongidi & Jawahar, ICDAR 2021). Downloaded directly
+from `cvit.iiit.ac.in`, **not** the third-party `c3rl/IIIT-INDIC-HW-WORDS-Hindi`
+HuggingFace mirror.
+
+**Licensing -- stated plainly, not glossed over.** No explicit license
+exists for this dataset anywhere: not on CVIT's own project page, not on
+the HuggingFace mirror. Independently corroborated, not just this
+project's own reading: querying `hardik90/indic-dataset-license-matrix`
+(a dedicated HuggingFace-wide licensing compliance dataset) directly shows
+its own audit of this exact dataset as `risk_level: HIGH`,
+`license_tag: (none)`, `guidance: "RESTRICTED -- treat as
+all-rights-reserved."` A named alternative, CPAR-2012 (figshare), was
+checked before defaulting to IIIT-HW-Dev: it has a genuinely clean CC BY
+4.0 license (confirmed via figshare's own API), but its actual public
+files are isolated digits/characters only -- the word-level pangrams its
+paper describes don't appear to be downloadable anywhere. Proceeding with
+IIIT-HW-Dev, with real mitigations, not just a disclaimer:
+- **No dataset files are committed, nor is anything composited from
+  them.** `eval/real_handwriting/.cache/` and `.../cases/` are gitignored.
+  Only `manifest.json` (text labels + metadata) is committed. Regenerate
+  locally with `python -m eval.generate_real_handwriting`, which
+  downloads the ~1.8GB archive on first run.
+- Findings are reported in aggregate (rates, counts, a handful of
+  illustrative examples), not as a redistributed dataset.
+- Attribution: Gongidi, S. and Jawahar, C.V., *"iiit-indic-hw-words: A
+  Dataset for Indic Handwritten Text Recognition,"* ICDAR 2021.
+
+**Curation -- manual, and disclosed as such.** Scanned real labels from
+the dataset's own `train.txt` and hand-picked words that are actually
+Indian names/places (they appear at their natural frequency in real Hindi
+text, roughly 7-9% of a random sample) plus a few deliberately
+claim-relevant generic words (`स्वर्गीय` = late/deceased, `धनराशि` = sum
+of money, `मरीजों` = patients). Automated name-filtering wasn't built --
+not worth the effort at this eval-set size. See
+`eval/generate_real_handwriting.py`'s `CURATED_SAMPLES` for exactly which
+(label, source image) pairs were used and why.
+
+**Real, stated limitations, not hidden:**
+- **Only 2 of 5 field types.** This corpus has no handwritten numeric or
+  date samples at all. There is no honest way to cover those field types
+  with real handwriting from this source -- the real-handwriting arm
+  covers `name` and `typeset` only.
+- **Compositing is a template + real ink, not a photographed genuine
+  document.** Real strokes are extracted from their source image
+  (background estimated, ink isolated by threshold, alpha-composited onto
+  the same card layout the synthetic arms use) rather than pasted
+  naively -- a naive paste was tested and looked obviously collaged. The
+  result is real handwriting on a synthetic form, not a scan of an actual
+  filled-out claim document. It tests "can Sarvam read this real ink,"
+  not "can it read a real claim document."
+- **The `illegible_natural` tier is small by necessity**: only 2 samples
+  per field type, because genuinely bad handwriting has to be found by
+  looking at real images, not manufactured on demand the way synthetic
+  degradation can be.
+
+### Three-arm Phase 2 baseline comparison
+
+| Metric | English (font) | Devanagari (font) | Real handwriting |
+|---|---|---|---|
+| Fabrication rate (aggregate) | 17.9% | 21.6% | 30.0% |
+| Extraction accuracy (legible input) | 100.0% | 66.2% | 79.4% |
+| Abstention rate (illegible/processed) | 64.3% | 63.5% | 60.0% |
+| **Abstention rate (naturally illegible)** | n/a | n/a | **0.0%** |
+
+**The headline finding**: on genuinely bad real handwriting -- no
+synthetic degradation, just actual messy human writing -- Sarvam abstained
+**0 times out of 20** and fabricated a confident wrong answer **14 times
+out of 20 (70%)**, more than double the aggregate rate. Every wrong answer
+came back at ~0.9999-1.0 confidence. Two examples, verified by reading the
+actual output, not just the aggregate number: the word "कुंदेरा" (Kundera)
+was misread differently and wrongly across all 5 repeated calls
+("बंदेरा", "वृंदेरा", "ब्रंदेरा"...), each at ~0.9999 confidence; "अल्पसंख्यकों"
+(minorities) was confidently misread as "अल्पसर्वरूपको" in 4 of 5 calls.
+
+This is the opposite pattern from the synthetically-pixelated tier (60%
+abstention there). The likely explanation: pixelated/blurred noise reads
+to the model as "this is corrupted," a cue to abstain -- but genuinely
+messy cursive handwriting still *looks like* normal handwriting, so the
+model guesses instead of recognizing it can't parse it. That's precisely
+the failure mode a font-based synthetic arm cannot produce, and precisely
+the one that matters most in a claims-intake system reading real
+handwritten forms.
+
+A second, independent finding sits underneath that one: even **clean,
+perfectly-rendered synthetic Devanagari** (zero real handwriting involved)
+already showed real degradation (66.2% vs. English's 100% legible-input
+accuracy). Verified across 12 distinct examples before trusting it: a
+specific, repeatable pattern of dropped or transposed *matras* (dependent
+vowel signs) -- e.g. "विफलता" (failure) losing its ि to become "वफलता,"
+independently, five separate times. Matra placement is a well-documented
+hard problem in Devanagari OCR (matras attach before/after/above/below
+their base consonant in position-dependent ways). Some of the real-arm gap
+is therefore script-level, and the real-handwriting arm adds a distinct,
+larger failure mode on top of it.
+
+### Phase 3: what fixed it, what didn't
+
+Bounded, validation-gated iteration against the frozen baseline --
+`eval/experiments.py`'s `decide()` accepts a change only if fabrication
+rate improves by >=2 percentage points with no more than a small
+accuracy-legible regression; a 6-accepted/12-experiment hard stop is
+enforced in code, not just documented. Per the approved scope: hypotheses
+1 and 2 only, hypothesis 3 added only if both failed.
+
+- **Hypothesis 2 (self-consistency, k=3 of 5 repeats must agree or
+  abstain) -- ACCEPTED.** Computed for free by re-aggregating the
+  baseline's already-collected repeats, no new API calls. Fabrication
+  rate 31.7% -> 25.0% (validation split), zero accuracy cost.
+- **Hypothesis 1 (nullable schema + explicit "return null if illegible"
+  instruction) -- REJECTED**, and the rejection itself is informative.
+  It improved fabrication rate by a large 28.3 points, but cost 4.0 points
+  of legible-input accuracy -- over the pre-committed 2-point tolerance.
+  A different risk tolerance might take that trade; the point of
+  pre-committing the threshold before running the experiment was to not
+  let hindsight rationalize an exception in the moment. The gate rejected
+  something with a real, non-trivial cost, which is what it's for.
+- Hypothesis 2 succeeding meant **Hypothesis 3 (verification pass) was
+  skipped**, per the plan's own stopping rule.
+
+Final accepted configuration going into Phase 4: baseline extraction +
+self-consistency (k=3 of 5) aggregation. The schema-instruction change is
+not applied.
+
+### Phase 4: held-out test, opened once
+
+`eval/splits.py::load_split('test', allow_test=True, arm='real_handwriting')`
+-- opened exactly once, logged automatically to
+`eval/real_handwriting/TEST_SET_ACCESS_LOG.jsonl`.
+
+| Metric | Validation (raw) | Validation (self-consistency) | Test (raw) | **Test (self-consistency)** |
+|---|---|---|---|---|
+| Fabrication rate | 31.7% | 25.0% | 27.5% | **14.3%** (1/7) |
+| Accuracy (legible) | 73.3% | 73.3% | 72.9% | **70.6%** |
+
+**No overfitting**: test tracks validation closely at both the raw and
+self-consistency-applied level. Not claiming test came out *better* --
+the 14.3% figure has a denominator of 7 cases (self-consistency collapses
+5 repeats into 1 verdict per case, and the test split simply doesn't have
+many illegible/absent cases), so a single flip moves it by ~14 points.
+The honest read is "consistent with validation, within noise."
+
+**One gap held-out testing cannot close, stated directly**: the test
+split has **zero `illegible_natural` cases** -- all 4 of that tier's
+samples (2 per field type; see the field-type limitation above) landed in
+tune/validation during stratification, a direct consequence of the pool
+being that small. The 70% naturally-illegible fabrication rate -- the
+single most important number in this whole diagnosis -- is therefore
+**not re-confirmed by held-out data**. It stands on the original n=20
+tune+validation sample. Said plainly here rather than let the clean Phase
+4 table imply everything was re-validated.
+
+### Reproducing this
+
+```bash
+python -m eval.generate_cases                    # English-synthetic arm (committed already)
+python -m eval.generate_cases_devanagari          # Devanagari-synthetic control arm
+python -m eval.generate_real_handwriting          # downloads ~1.8GB from CVIT on first run
+
+python -m eval.collect --experiment baseline --split tune validation --repeats 5
+python -m eval.collect --experiment baseline --split tune validation --repeats 5 --arm synth_devanagari --language hi-IN
+python -m eval.collect --experiment baseline --split tune validation --repeats 5 --arm real_handwriting --language hi-IN
+
+python -m eval.metrics --experiment baseline [--arm <arm>]
+python -m eval.experiments --arm real_handwriting --language hi-IN run --name h1... --hypothesis "..." --extra-instruction "..."
+python -m eval.experiments --arm real_handwriting self-consistency --k 3 --n 5
+python -m eval.experiments --arm real_handwriting status
+```
+
+Passing `--arm synth_devanagari` or `--arm real_handwriting` to `collect.py`
+or `experiments.py` without an explicit `--language` is a hard error by
+design -- an earlier run once defaulted to `en-IN` for Devanagari content
+and silently produced meaningless results (see the git history on
+`eval/collect.py` if you want the specifics of what that looked like and
+how it was caught).
 
 ## How to run
 
