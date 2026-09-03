@@ -1,65 +1,115 @@
 # Claim Adjudication Agent (demo)
 
-A small demo built for a proposal to Sarvam AI: claims-intake tooling for
-Indian life insurers that gets a death claim file **decision-ready** for a
-human adjudicator, faster.
+This repo answers one question: can claims-intake tooling for Indian life
+insurers actually be built on Sarvam's Extract API, and what breaks when
+you try? There's a working pipeline here -- point it at a folder of claim
+documents and it extracts fields, checks sufficiency, and hands a human
+adjudicator a decision-ready summary. Testing that pipeline against
+genuinely handwritten Indic-script paperwork surfaced a specific,
+reproducible failure: on real bad handwriting, the model almost never
+admits it can't read something. It guesses, confidently, instead.
 
-## What this is
+That traces back to a real product gap, not a quality shortfall: **Sarvam's
+Extract API is not documented as handling handwriting at all.** Digitise
+(Sarvam's other document endpoint) explicitly supports a `content_type:
+printed | handwritten | mixed` hint; Extract -- the endpoint that actually
+returns structured fields with confidence scores, the one any real
+intake pipeline would use -- has no equivalent. There's no way to even
+tell Extract a document might be handwritten. So what follows is what
+happens when handwritten claims paperwork, which is what a real intake
+pipeline would actually receive, reaches an endpoint with no handwriting
+affordance -- not a review of how well Extract does something it claims
+to do.
 
-Point it at a folder of claim documents. It extracts the fields a death
-claim needs, scores each field's confidence, flags anything missing or
-inconsistent, and hands a human adjudicator a clean summary plus a
-replayable audit trail. The pay/deny call is never made here.
+One more thing worth knowing before you read a single number: these are
+results from a specific, deliberately adversarial evaluation on input
+this endpoint isn't documented for, run at small sample sizes (dozens of
+cases per condition, not thousands). That's the honest scope. It is not a
+general benchmark of Sarvam's capability, and no number below should be
+read as one.
 
-## What this is not
+## What this is (and isn't)
 
-- **Not an auto-adjudicator.** It never approves or denies a claim. Its only
-  output is "here's what's ready, here's what a human needs to chase."
-- **Not using real claims data.** Every document under `samples/` is
-  synthetic -- fabricated for this repo. See [Synthetic data](#synthetic-data).
-- **Not production-hardened.** No auth, no PII handling policy, no retry/
-  backoff tuning beyond the basics. It's a demo of the architecture, not a
-  deployable service.
+Point it at a folder of claim documents and it extracts the fields a
+death claim needs, scores each field's confidence, flags anything missing
+or inconsistent, and hands a human adjudicator a clean, replayable
+summary. The pay/deny call is never made here.
 
-## Key finding: confidence 1.0 does not mean correct
+- **Not an auto-adjudicator.** Output is "here's what's ready, here's what
+  a human needs to chase" -- never a decision.
+- **Not using real claims data.** Everything under `samples/` is
+  fabricated for this repo; everything under `eval/`'s real-handwriting
+  arm comes from a public research dataset, used under the terms
+  described in [the full diagnosis](#the-full-diagnosis) below. See also
+  [Synthetic data](#synthetic-data).
+- **Not production-hardened.** No auth, no PII handling policy, no
+  retry/backoff tuning beyond the basics. A demo of the architecture, not
+  a deployable service.
 
-`claim_002`'s death certificate has one field, `place_of_death`, deliberately
-made illegible -- pixelated, blurred, and noised until a human can't read it
-(open the image; the rest of the page is untouched). The real value rendered
-there, before degradation, was **"Mumbai"**. This was a direct test of
-whether `sufficiency.py`'s confidence threshold (`CONFIDENCE_THRESHOLD =
-0.80`) would actually catch a bad extraction from Sarvam's Extract API.
+## The finding
 
-Four independent live calls on that exact same image returned:
+On genuinely bad real handwriting -- actual messy human writing, zero
+synthetic degradation applied -- Sarvam's Extract API abstained **0 times
+out of 20 cases** and fabricated a confident wrong answer **14 times out
+of 20 (70%, n=20)**, every wrong answer at ~0.9999-1.0 confidence. That's
+more than double the fabrication rate seen on synthetically-degraded
+input, where the model abstained 60% of the time instead of guessing.
 
-| Call | Returned value | Confidence |
-|---|---|---|
-| 1 | `"LIG Colony, Mumbai"` -- fabricated; this text never existed on the document | 1.0 |
-| 2 | `"Mumbai"` -- correct | 1.0 |
-| 3 | *not found* | 0.0 |
-| 4 | `"Mumbai"` -- correct | 1.0 |
+Two examples, verified by reading the actual output, not just trusting
+the aggregate: the word "कुंदेरा" (Kundera) was misread differently and
+wrongly across all 5 repeated calls ("बंदेरा", "वृंदेरा", "ब्रंदेरा"...),
+each at ~0.9999 confidence; "अल्पसंख्यकों" (minorities) was confidently
+misread as "अल्पसर्वरूपको" in 4 of 5 calls (n=5 each).
 
-Two things follow, and both matter more than a clean pass/fail would have:
+**The likely mechanism**: pixelated or blurred noise reads to the model as
+"this is corrupted" -- a cue to abstain. Genuinely messy handwriting
+doesn't trigger that same signal; it still *looks like* normal
+handwriting, so the model guesses instead of recognizing it can't parse
+it. As stated above, this isn't a quality gap that marginally-better
+handwriting-reading would close -- **Extract has no way to be told it
+might be looking at handwriting in the first place.** A pipeline built to
+read real claims paperwork will hit exactly this endpoint, with exactly
+this gap.
 
-1. **Confidence 1.0 does not mean correct.** Call 1 fabricated a more
-   specific, plausible-sounding wrong answer at the same maximum confidence
-   as the two calls that got it right. A confidence-threshold check --
-   `sufficiency.py`'s only defense against a bad field -- would have let
-   that fabricated value straight through to a human adjudicator's
-   decision-ready summary, completely unflagged, because nothing about its
-   self-reported confidence looked different from a correct extraction.
-2. **The model doesn't consistently abstain on ambiguous input.** Call 3's
-   "not found" is the one outcome `sufficiency.py` *would* have caught.
-   Whether the same input gets that safe outcome or a confidently wrong one
-   looks close to a coin flip across these four calls.
+**Where this finding came from.** The earliest version of this repo's
+demo included one deliberately illegible field (`place_of_death` in a
+synthetic sample claim) as a smoke test of whether the sufficiency
+check's confidence threshold would catch a bad extraction. Four
+independent live calls on that single field returned: a fabricated value
+at confidence 1.0, two correct answers also at confidence 1.0, and one
+correct abstention at confidence 0.0 (n=4) -- too small to be a finding on
+its own, but consistent enough to be worth taking seriously. That n=4
+oddity is what prompted the full three-arm investigation this README is
+mostly about.
 
-This is direct, reproducible evidence for why the pay/deny call has to stay
-human, and why sufficiency-checking can't be reduced to "trust the
-confidence score." The structural checks in this repo that *don't* depend
-on Sarvam accurately self-reporting its own uncertainty -- the missing-
-document check and the cross-document name-mismatch check -- are the ones
-that would have actually caught something wrong in this claim. The
-confidence threshold, on its own, would not have.
+**What would close this gap.** Constructive, not a complaint:
+- A `content_type` hint on Extract, matching what Digitise already has,
+  would let the model calibrate its behavior for handwritten input
+  specifically instead of treating it identically to printed text.
+- The API currently has exactly one negative state ("not found"). There's
+  no "present but illegible" -- the model has no vocabulary to express "I
+  can see something here but I'm not confident I read it right," distinct
+  from "there's nothing here."
+
+Neither is a defect in what exists today; both are affordances that
+don't exist yet. Their absence is exactly why this repo's sufficiency
+checking can't lean on Sarvam's own confidence score and has to be done
+with harness-level structural checks instead -- which is what the rest of
+this README is about.
+
+## What this means for building on Sarvam
+
+Confidence cannot be used as a reliability signal, at any threshold: it
+doesn't separate correct from incorrect (Phase 1-2, below), it doesn't
+separate a found value from an abstention (also below), and on input this
+kind of system actually needs to handle, it doesn't separate a guess from
+a real answer. Any claims-intake system built on Extract has two
+structural choices: keep a human in the loop for the actual pay/deny
+call, and build independent checks that don't depend on Sarvam accurately
+self-reporting its own uncertainty. This repo does both, and everything
+below -- the architecture, then the full diagnosis that established the
+numbers above -- is the consequence of that finding, not a design
+decision made in advance of testing it.
 
 ## Architecture
 
@@ -70,169 +120,122 @@ sufficiency.py     <- deterministic rules, ZERO model calls
 audit.py          Append-only JSONL log, replayable per claim.
 run.py            CLI: wires the above together, makes no decisions itself.
 samples/          Synthetic sample claims + the script that generated them.
-eval/             Separate investigation: what does Sarvam's confidence
-                  score actually measure? See "Confidence diagnosis" below.
+eval/             The full diagnosis behind the finding above -- see below.
 ```
 
 The split that matters most: **extraction is a model call, sufficiency
-checking is plain Python.** `sufficiency.py` imports nothing from Sarvam and
-never calls a model -- it's a fixed list of required documents, required
-fields, a confidence threshold, and a string-similarity check for
-cross-document name mismatches (see the constants at the top of that file).
-A regulator or auditor can read that file top to bottom and know exactly
-what triggers a "needs human review" flag, without trusting a model's
-reasoning. `extract.py` is the only file that talks to Sarvam, and its job
-ends at producing `(value, confidence, source)` per field -- it makes no
-sufficiency judgment of its own.
+checking is plain Python.** `sufficiency.py` imports nothing from Sarvam
+and never calls a model -- it's a fixed list of required documents,
+required fields, a confidence threshold, and a string-similarity check
+for cross-document name mismatches (see the constants at the top of that
+file). A regulator or auditor can read that file top to bottom and know
+exactly what triggers a "needs human review" flag, without trusting a
+model's reasoning. `extract.py` is the only file that talks to Sarvam,
+and its job ends at producing `(value, confidence, source)` per field --
+it makes no sufficiency judgment of its own.
 
-## What's verified vs. assumed
+This pipeline has been live-tested end-to-end against the real Sarvam
+API, not just built against docs: `run.py samples/claim_001` and
+`run.py samples/claim_002` both run against a real `SARVAM_API_KEY`, and
+the full path works as designed -- job submission, polling, `result` +
+`annotations` parsing, per-field confidence, document + page source
+pointers, the sufficiency check, and the audit log replay. See
+[Limitations](#limitations) for what that live testing does *not* cover.
 
-This matters for a repo going to Sarvam, so it's stated plainly.
+## The full diagnosis
 
-**Verified against the real Sarvam API** (live smoke test, not just docs):
-`run.py samples/claim_001` and `run.py samples/claim_002` were both run
-end-to-end against a real `SARVAM_API_KEY`. The full path works as
-designed: job submission, polling, `result` + `annotations` parsing,
-per-field confidence, document + page source pointers, the sufficiency
-check, and the audit log replay. `claim_001` came back decision-ready;
-`claim_002` came back flagged for the missing KYC document and the name
-mismatch, exactly as intended.
-
-Worth being honest about from that live run:
-- Most fields on both claims came back with confidence at or extremely
-  close to `1.0`, including the handwriting-style field -- that's a real
-  result, not fabricated, but it's a weak test of robustness: the
-  "handwriting" is a clean, consistent script *font*
-  (`samples/generate_samples.py`'s `hand_font`), not genuine irregular
-  human handwriting, and the mild scan artifacts (skew, sensor noise,
-  vignetting, JPEG recompression) didn't move confidence at all. This
-  confirms the pipeline works, not that Extract is robust to real
-  handwriting or severe degradation -- that would need real scanned
-  documents to test properly.
-- Confidence *did* eventually prove uninformative, but only once the input
-  was made genuinely illegible rather than just noisy -- see
-  [Key finding](#key-finding-confidence-10-does-not-mean-correct) above.
-- The request/response shapes themselves were built against the installed
-  `sarvamai` SDK's actual source (`sarvamai==0.1.31`, generated by Fern
-  from Sarvam's real OpenAPI spec), which is how the contradictions in
-  Sarvam's public docs (see below) got resolved before ever making a live
-  call -- the live run then confirmed that source was right.
-
-**Still not verified by this demo:** the documented file-size limit (50MB
-vs 200MB disagreement) and free-credit amount (₹100 vs ₹1,000
-disagreement) weren't stress-tested here -- the sample documents are small
-single-page images, well under any plausible limit. Check your own
-dashboard for the real numbers.
-
-**Specific documented gaps, not hidden:**
-- Extract's source pointer is **document + page only** -- there is no
-  bounding box or region within the page. (Digitise's JSON output does
-  include block-level bounding boxes, per the SDK docstring, but Extract
-  does not.) Don't read `SourcePointer` as more precise than that.
-- Handwriting support is explicitly marketed for **Digitise**
-  ("handwritten forms and notes" is a named use case, insurance claims
-  included) but is never mentioned for **Extract** specifically, and no
-  accuracy numbers are published either way. `claim_002`'s cause-of-death
-  field was extracted at ~1.0 confidence in the live run -- but see the
-  caveat above, that field is a clean script font, not real handwriting,
-  so this is not a genuine handwriting-robustness result either way.
-- Sarvam's own docs disagree with themselves on file-size limits (50MB vs
-  200MB across two pages) and free signup credit (₹100 vs ₹1,000 across two
-  pages). Check your own dashboard rather than trusting either number here.
-- The SDK is pre-1.0 (`0.1.31`) -- the interface may change under it.
-
-## Confidence diagnosis: what it actually measures, what fixed it, what didn't
-
-The [Key finding](#key-finding-confidence-10-does-not-mean-correct) above
-was too important to leave as a one-off anecdote from four API calls. This
-section is the full, disciplined investigation that followed: a frozen
-baseline, hypothesis testing gated against a pre-committed acceptance
-threshold, and a held-out test unlocked as a single deliberate decision.
-All of it lives under
-`eval/` and is reproducible -- see [Reproducing this](#reproducing-this)
-at the end of this section.
+Everything above is the headline. This is the disciplined investigation
+behind it: a frozen baseline, hypothesis testing gated against a
+pre-committed acceptance threshold, and a held-out test unlocked as a
+single deliberate decision. All of it lives under `eval/` and is
+reproducible -- see [Reproducing this](#reproducing-this) at the end of
+this section.
 
 ### Phase 0: what does the confidence score actually measure?
 
-Checked before writing any diagnostic code, in the SDK source and Sarvam's
-own docs, not assumed:
+Checked before writing any diagnostic code, in the SDK source and
+Sarvam's own docs, not assumed:
 
-- **Undocumented everywhere that would normally define it.** The SDK types
-  `annotations` as an untyped `Dict[str, Any]`. The only definition
-  anywhere in Sarvam's own docs is *"a per-field score... showing how sure
-  Sarvam is about the value"* -- a self-assessment framing, not a
+- **Undocumented everywhere that would normally define it.** The SDK
+  types `annotations` as an untyped `Dict[str, Any]`. The only definition
+  anywhere in Sarvam's own docs is *"a per-field score... showing how
+  sure Sarvam is about the value"* -- a self-assessment framing, not a
   calibration claim, not a methodology.
 - **A near-miss worth recording**: an early search surfaced a plausible
   citation claiming confidence is "for risk-aware prioritization, not
   ground-truth correctness." Traced before repeating it -- the source
-  turned out to be an unrelated arXiv paper that doesn't mention Sarvam at
-  all. Flagging the near-miss here rather than quietly dropping it,
+  turned out to be an unrelated arXiv paper that doesn't mention Sarvam
+  at all. Flagging the near-miss here rather than quietly dropping it,
   because almost repeating a fabricated-but-plausible citation is exactly
   the failure mode this whole diagnosis is about.
-- **Structural findings that held up**: Digitise has a `content_type:
+- **The structural gap that matters most**: Digitise has a `content_type:
   printed | handwritten | mixed` hint parameter; Extract has no
-  equivalent -- there's no way to even tell Extract a document might be
-  handwritten. Only one negative state exists in the API ("not found" = a
-  dash) -- no separate "present but illegible" status. No `required`/
-  `nullable` keyword in the schema DSL.
+  equivalent (see [The finding](#the-finding) above). Only one negative
+  state exists in the API ("not found" = a dash) -- no separate "present
+  but illegible" status. No `required`/`nullable` keyword in the schema
+  DSL.
 - **Verdict**: confidence behaves like an uncalibrated, self-reported
   model signal -- consistent with a Vision-Language Model architecture,
   not classical OCR character-confidence -- not a correctness metric.
 
-### Phase 1-2: eval harness and the first baseline
+### Experimental design: two controls, one treatment arm
 
-Built a 100-case stratified eval set (5 field types x 5 degradation levels
-x 4 values, `eval/generate_cases.py`), split 40/30/30 tune/validation/test
-with the test split locked in code (`eval/splits.py::load_split` raises
-unless `allow_test=True` is passed explicitly, and logs every access).
-Baseline result on this English-synthetic set, 5 repeats per case:
+This is a controlled comparison, not a false start that got corrected
+partway through. Three arms:
 
-- **Fabrication rate: 17.9%** (confident wrong answer on illegible/absent
-  input).
-- **Every one of 350 calls** reported confidence in `[0.8, 1.0)` -- no
-  spread at all. Within that single bucket, accuracy was 92.9%: confidence
-  has zero power to separate the correct 93% from the wrong 7%, because
-  everything lands in the same bucket regardless of correctness.
-- A single smoke-test case returned `value: null` (abstained) at
-  **confidence 0.997** -- confidence isn't just decoupled from
-  correctness, it's decoupled from *abstention* too. Confirmed at scale:
-  100% of 115 abstentions in the full baseline carried confidence >= 0.8.
+- **English-synthetic** (`eval/generate_cases.py`) -- the original
+  control. PIL-rendered text, a script font (Segoe Print) standing in for
+  handwriting.
+- **Devanagari-synthetic** (`eval/generate_cases_devanagari.py`) -- a
+  second control, holding script constant. Needed because the English
+  arm alone can't isolate whether a real-vs-synthetic gap comes from
+  genuine handwriting or just from switching languages -- comparing
+  English-synthetic directly against Devanagari real handwriting would
+  confound origin and script in a single number. This arm exists
+  specifically to prevent that.
+- **Real handwriting** (`eval/generate_real_handwriting.py`) -- the
+  treatment arm: genuine human handwriting from a real dataset,
+  composited onto the same template the synthetic arms use.
 
-### The pivot: synthetic handwriting isn't real handwriting
+The gap between the two synthetic controls and the treatment arm *is* the
+finding -- that's the shape of a controlled experiment, and it's the
+reason three arms exist instead of one.
 
-Everything above used a clean script *font* (Segoe Print) to simulate
-handwriting -- not genuine human handwriting. Since the pitch to Sarvam is
-specifically about residual risk on real Indic-script claims paperwork,
-that's a real gap: every number above measures how Sarvam handles a font
-renderer, not real handwriting. Investigated a pivot to real handwriting
-before assuming it was even feasible -- see below.
+Phase 3 (hypothesis testing, below) was scoped to the real arm only, by
+design -- that's the distribution the thesis is actually about, so that's
+where iteration budget went, not because the English arm's own Phase 3
+run was abandoned mid-way. It was started once (`h1_nullable_instruction`,
+paused at 5 of 150 calls when this investigation's scope shifted to
+building the three-arm comparison) and intentionally not resumed, since
+finishing it would have answered a question this repo isn't trying to
+answer with that arm.
 
-### Real-handwriting arm: dataset, licensing, and what it actually tests
+### The real-handwriting arm: dataset, licensing, curation
 
 **Dataset**: [IIIT-HW-Dev](https://cvit.iiit.ac.in/research/projects/cvit-projects/indic-hw-data)
 (~95K genuine handwritten Devanagari words, 135 writers), collected by
 CVIT, IIIT Hyderabad (Gongidi & Jawahar, ICDAR 2021). Downloaded directly
-from `cvit.iiit.ac.in`, **not** the third-party `c3rl/IIIT-INDIC-HW-WORDS-Hindi`
-HuggingFace mirror.
+from `cvit.iiit.ac.in`, **not** the third-party
+`c3rl/IIIT-INDIC-HW-WORDS-Hindi` HuggingFace mirror.
 
-**Licensing -- stated plainly, not glossed over.** No explicit license
-exists for this dataset anywhere: not on CVIT's own project page, not on
-the HuggingFace mirror. Independently corroborated, not just this
-project's own reading: querying `hardik90/indic-dataset-license-matrix`
-(a dedicated HuggingFace-wide licensing compliance dataset) directly shows
-its own audit of this exact dataset as `risk_level: HIGH`,
-`license_tag: (none)`, `guidance: "RESTRICTED -- treat as
-all-rights-reserved."` A named alternative, CPAR-2012 (figshare), was
-checked before defaulting to IIIT-HW-Dev: it has a genuinely clean CC BY
-4.0 license (confirmed via figshare's own API), but its actual public
-files are isolated digits/characters only -- the word-level pangrams its
-paper describes don't appear to be downloadable anywhere. Proceeding with
-IIIT-HW-Dev, with real mitigations, not just a disclaimer:
+**Licensing -- stated plainly.** No explicit license exists for this
+dataset anywhere: not on CVIT's own project page, not on the HuggingFace
+mirror. Independently corroborated, not just this project's own reading:
+querying `hardik90/indic-dataset-license-matrix` (a dedicated
+HuggingFace-wide licensing compliance dataset) directly shows its own
+audit of this exact dataset as `risk_level: HIGH`, `license_tag: (none)`,
+`guidance: "RESTRICTED -- treat as all-rights-reserved."` A named
+alternative, CPAR-2012 (figshare), was checked before defaulting to
+IIIT-HW-Dev: it has a genuinely clean CC BY 4.0 license (confirmed via
+figshare's own API), but its actual public files are isolated
+digits/characters only -- the word-level pangrams its paper describes
+don't appear to be downloadable anywhere. Proceeding with IIIT-HW-Dev,
+with real mitigations, not just a disclaimer:
 - **No dataset files are committed, nor is anything composited from
-  them.** `eval/real_handwriting/.cache/` and `.../cases/` are gitignored.
-  Only `manifest.json` (text labels + metadata) is committed. Regenerate
-  locally with `python -m eval.generate_real_handwriting`, which
-  downloads the ~1.8GB archive on first run.
+  them.** `eval/real_handwriting/.cache/` and `.../cases/` are
+  gitignored. Only `manifest.json` (text labels + metadata) is committed.
+  Regenerate locally with `python -m eval.generate_real_handwriting`,
+  which downloads the ~1.8GB archive on first run.
 - Findings are reported in aggregate (rates, counts, a handful of
   illustrative examples), not as a redistributed dataset.
 - Attribution: Gongidi, S. and Jawahar, C.V., *"iiit-indic-hw-words: A
@@ -240,71 +243,66 @@ IIIT-HW-Dev, with real mitigations, not just a disclaimer:
 
 **Curation -- manual, and disclosed as such.** Scanned real labels from
 the dataset's own `train.txt` and hand-picked words that are actually
-Indian names/places (they appear at their natural frequency in real Hindi
-text, roughly 7-9% of a random sample) plus a few deliberately
+Indian names/places (they appear at their natural frequency in real
+Hindi text, roughly 7-9% of a random sample) plus a few deliberately
 claim-relevant generic words (`स्वर्गीय` = late/deceased, `धनराशि` = sum
 of money, `मरीजों` = patients). Automated name-filtering wasn't built --
 not worth the effort at this eval-set size. See
 `eval/generate_real_handwriting.py`'s `CURATED_SAMPLES` for exactly which
 (label, source image) pairs were used and why.
 
-**Real, stated limitations, not hidden:**
+**Real, stated limitations:**
 - **Only 2 of 5 field types.** This corpus has no handwritten numeric or
   date samples at all. There is no honest way to cover those field types
   with real handwriting from this source -- the real-handwriting arm
   covers `name` and `typeset` only.
 - **Compositing is a template + real ink, not a photographed genuine
   document.** Real strokes are extracted from their source image
-  (background estimated, ink isolated by threshold, alpha-composited onto
-  the same card layout the synthetic arms use) rather than pasted
+  (background estimated, ink isolated by threshold, alpha-composited
+  onto the same card layout the synthetic arms use) rather than pasted
   naively -- a naive paste was tested and looked obviously collaged. The
-  result is real handwriting on a synthetic form, not a scan of an actual
-  filled-out claim document. It tests "can Sarvam read this real ink,"
-  not "can it read a real claim document."
+  result is real handwriting on a synthetic form, not a scan of an
+  actual filled-out claim document. It tests "can Sarvam read this real
+  ink," not "can it read a real claim document."
 - **The `illegible_natural` tier is small by necessity**: only 2 samples
   per field type, because genuinely bad handwriting has to be found by
   looking at real images, not manufactured on demand the way synthetic
-  degradation can be.
+  degradation can be. This is also the tier the headline 70% figure comes
+  from -- see the n=20 caveat under Phase 4.
 
-### Three-arm Phase 2 baseline comparison
+### Three-arm baseline comparison
 
 | Metric | English (font) | Devanagari (font) | Real handwriting |
 |---|---|---|---|
-| Fabrication rate (aggregate) | 17.9% | 21.6% | 30.0% |
-| Extraction accuracy (legible input) | 100.0% | 66.2% | 79.4% |
+| Fabrication rate (aggregate) | 17.9% (n=350) | 21.6% (n=349) | 30.0% (n=295) |
+| Extraction accuracy (legible input) | 100.0% (n=210) | 66.2% (n=349) | 79.4% (n=295) |
 | Abstention rate (illegible/processed) | 64.3% | 63.5% | 60.0% |
-| **Abstention rate (naturally illegible)** | n/a | n/a | **0.0%** |
+| **Abstention rate (naturally illegible)** | n/a | n/a | **0.0% (0/20)** |
+| **Fabrication rate (naturally illegible)** | n/a | n/a | **70.0% (14/20)** |
 
-**The headline finding**: on genuinely bad real handwriting -- no
-synthetic degradation, just actual messy human writing -- Sarvam abstained
-**0 times out of 20** and fabricated a confident wrong answer **14 times
-out of 20 (70%)**, more than double the aggregate rate. Every wrong answer
-came back at ~0.9999-1.0 confidence. Two examples, verified by reading the
-actual output, not just the aggregate number: the word "कुंदेरा" (Kundera)
-was misread differently and wrongly across all 5 repeated calls
-("बंदेरा", "वृंदेरा", "ब्रंदेरा"...), each at ~0.9999 confidence; "अल्पसंख्यकों"
-(minorities) was confidently misread as "अल्पसर्वरूपको" in 4 of 5 calls.
-
-This is the opposite pattern from the synthetically-pixelated tier (60%
-abstention there). The likely explanation: pixelated/blurred noise reads
-to the model as "this is corrupted," a cue to abstain -- but genuinely
-messy cursive handwriting still *looks like* normal handwriting, so the
-model guesses instead of recognizing it can't parse it. That's precisely
-the failure mode a font-based synthetic arm cannot produce, and precisely
-the one that matters most in a claims-intake system reading real
-handwritten forms.
+The naturally-illegible row is [the finding](#the-finding) already stated
+above, restated here in the full comparison for context: it's the
+sharpest gap in the table, and the opposite pattern from the
+synthetically-pixelated tier (60% abstention there).
 
 A second, independent finding sits underneath that one: even **clean,
-perfectly-rendered synthetic Devanagari** (zero real handwriting involved)
-already showed real degradation (66.2% vs. English's 100% legible-input
-accuracy). Verified across 12 distinct examples before trusting it: a
-specific, repeatable pattern of dropped or transposed *matras* (dependent
-vowel signs) -- e.g. "विफलता" (failure) losing its ि to become "वफलता,"
-independently, five separate times. Matra placement is a well-documented
-hard problem in Devanagari OCR (matras attach before/after/above/below
-their base consonant in position-dependent ways). Some of the real-arm gap
-is therefore script-level, and the real-handwriting arm adds a distinct,
-larger failure mode on top of it.
+perfectly-rendered synthetic Devanagari** (zero real handwriting
+involved) already showed real degradation (66.2% vs. English's 100%
+legible-input accuracy). Verified across 12 distinct examples before
+trusting it: a specific, repeatable pattern of dropped or transposed
+*matras* (dependent vowel signs) -- e.g. "विफलता" (failure) losing its ि
+to become "वफलता," independently, five separate times. This is
+consistent with a **known, well-documented hard problem in Devanagari
+OCR/HTR generally**, not a surprising Sarvam-specific deficiency: matras
+attach to their base consonant in position-dependent ways -- before,
+after, above, or below it -- and multiple independent studies identify
+exactly this as a source of segmentation and recognition difficulty (e.g.
+["Challenges in recognition of Devanagari Scripts due to segmentation of
+handwritten text," IEEE](https://ieeexplore.ieee.org/document/7724755);
+["Handwritten Devanagari Script Segmentation: A Non-linear Fuzzy
+Approach"](https://arxiv.org/abs/1501.05472)). Some of the real-arm gap
+is therefore script-level and expected from the literature; the
+real-handwriting arm adds a distinct, larger failure mode on top of it.
 
 ### Phase 3: what fixed it, what didn't
 
@@ -312,21 +310,26 @@ Bounded, validation-gated iteration against the frozen baseline --
 `eval/experiments.py`'s `decide()` accepts a change only if fabrication
 rate improves by >=2 percentage points with no more than a small
 accuracy-legible regression; a 6-accepted/12-experiment hard stop is
-enforced in code, not just documented. Per the approved scope: hypotheses
-1 and 2 only, hypothesis 3 added only if both failed.
+enforced in code, not just documented. Scoped to the real arm only (see
+above). Per the approved plan: hypotheses 1 and 2 only, hypothesis 3
+added only if both failed.
 
 - **Hypothesis 2 (self-consistency, k=3 of 5 repeats must agree or
   abstain) -- ACCEPTED.** Computed for free by re-aggregating the
   baseline's already-collected repeats, no new API calls. Fabrication
-  rate 31.7% -> 25.0% (validation split), zero accuracy cost.
+  rate 31.7% -> 25.0% (validation split, n=30), zero accuracy cost.
 - **Hypothesis 1 (nullable schema + explicit "return null if illegible"
-  instruction) -- REJECTED**, and the rejection itself is informative.
-  It improved fabrication rate by a large 28.3 points, but cost 4.0 points
-  of legible-input accuracy -- over the pre-committed 2-point tolerance.
-  A different risk tolerance might take that trade; the point of
-  pre-committing the threshold before running the experiment was to not
-  let hindsight rationalize an exception in the moment. The gate rejected
-  something with a real, non-trivial cost, which is what it's for.
+  instruction) -- REJECTED.** This is arguably the single strongest
+  methodological point in this repo, so it's worth stating plainly rather
+  than just reporting the verdict: the change improved fabrication rate
+  by a large 28.3 points, but cost 4.0 points of legible-input accuracy
+  -- over the pre-committed 2-point tolerance. **A different risk
+  tolerance would take that trade.** The point of pre-committing the
+  threshold *before* running the experiment was specifically to prevent
+  that call being made after seeing the numbers, when a 28-point
+  improvement is sitting right there and easy to rationalize keeping. The
+  gate rejected a change with a large, real benefit, on a rule agreed to
+  in advance. That's what it's for.
 - Hypothesis 2 succeeding meant **Hypothesis 3 (verification pass) was
   skipped**, per the plan's own stopping rule.
 
@@ -339,18 +342,18 @@ not applied.
 `eval/splits.py::load_split('test', allow_test=True, arm='real_handwriting')`
 -- unlocked as a single deliberate decision, made once. The loader itself
 was invoked 3 times that afternoon (all logged, timestamps in
-`eval/real_handwriting/TEST_SET_ACCESS_LOG.jsonl`): once to confirm the
-lock actually opened, then twice more while resuming an interrupted
-125-call collection run. Each invocation just re-reads the same fixed
-25-case list -- no new information leaks per call, and none of it changed
-what got tested or how -- but "opened exactly once" would overstate the
-literal call count, so the log is committed as-is rather than summarized
-away.
+`eval/real_handwriting/TEST_SET_ACCESS_LOG.jsonl`, committed to the
+repo): once to confirm the lock actually opened, then twice more while
+resuming an interrupted 125-call collection run. Each invocation just
+re-reads the same fixed 25-case list -- no new information leaks per
+call, and none of it changed what got tested or how -- but "opened
+exactly once" would overstate the literal call count, so the log is
+committed as-is rather than summarized away.
 
 | Metric | Validation (raw) | Validation (self-consistency) | Test (raw) | **Test (self-consistency)** |
 |---|---|---|---|---|
-| Fabrication rate | 31.7% | 25.0% | 27.5% | **14.3%** (1/7) |
-| Accuracy (legible) | 73.3% | 73.3% | 72.9% | **70.6%** |
+| Fabrication rate | 31.7% (n=30) | 25.0% (n=30) | 27.5% (n=25) | **14.3% (1/7)** |
+| Accuracy (legible) | 73.3% (n=30) | 73.3% (n=30) | 72.9% (n=25) | **70.6% (n=24)** |
 
 **No overfitting**: test tracks validation closely at both the raw and
 self-consistency-applied level. Not claiming test came out *better* --
@@ -361,13 +364,13 @@ The honest read is "consistent with validation, within noise."
 
 **One gap held-out testing cannot close, stated directly**: the test
 split has **zero `illegible_natural` cases** -- all 4 of that tier's
-samples (2 per field type; see the field-type limitation above) landed in
-tune/validation during stratification, a direct consequence of the pool
-being that small. The 70% naturally-illegible fabrication rate -- the
-single most important number in this whole diagnosis -- is therefore
-**not re-confirmed by held-out data**. It stands on the original n=20
-tune+validation sample. Said plainly here rather than let the clean Phase
-4 table imply everything was re-validated.
+samples (2 per field type; see the field-type limitation above) landed
+in tune/validation during stratification, a direct consequence of the
+pool being that small. **The 70% naturally-illegible fabrication rate --
+the single most important number in this whole diagnosis, and it rests
+on n=20 -- is therefore not re-confirmed by held-out data.** It stands on
+the original tune+validation sample alone. Said plainly here rather than
+let the clean Phase 4 table imply everything was re-validated.
 
 ### Reproducing this
 
@@ -386,12 +389,54 @@ python -m eval.experiments --arm real_handwriting self-consistency --k 3 --n 5
 python -m eval.experiments --arm real_handwriting status
 ```
 
-Passing `--arm synth_devanagari` or `--arm real_handwriting` to `collect.py`
-or `experiments.py` without an explicit `--language` is a hard error by
-design -- an earlier run once defaulted to `en-IN` for Devanagari content
-and silently produced meaningless results (see the git history on
-`eval/collect.py` if you want the specifics of what that looked like and
-how it was caught).
+Passing `--arm synth_devanagari` or `--arm real_handwriting` to
+`collect.py` or `experiments.py` without an explicit `--language` is a
+hard error by design -- an earlier run once defaulted to `en-IN` for
+Devanagari content and silently produced meaningless results (see the git
+history on `eval/collect.py` if you want the specifics of what that
+looked like and how it was caught).
+
+## Limitations
+
+Everything in this section is a real, currently-true constraint on what
+this repo has and hasn't shown -- collected here in one place in addition
+to where each is already discussed in context above, not instead of.
+
+- **The headline finding rests on n=20 and isn't re-confirmed by
+  held-out data.** See [Phase 4](#phase-4-held-out-test-opened-once).
+- **Extract has no handwriting affordance** (no `content_type` hint, no
+  "present but illegible" state) -- this is the product gap the whole
+  investigation is about, not an incidental note. See
+  [The finding](#the-finding).
+- **The real-handwriting arm covers 2 of 5 field types** (`name` and
+  `typeset` only) -- this corpus has no handwritten numeric or date
+  samples.
+- **Compositing is real ink on a synthetic template, not a photographed
+  genuine document.** It tests reading real handwriting, not reading a
+  real filled-out claim form.
+- **IIIT-HW-Dev has no explicit license**; used under research/citation
+  norms with real mitigations (no committed dataset files or derivatives,
+  aggregate reporting only) -- see
+  [licensing](#the-real-handwriting-arm-dataset-licensing-curation).
+- **Extract's source pointer is document + page only** -- there is no
+  bounding box or region within the page. (Digitise's JSON output does
+  include block-level bounding boxes, per the SDK docstring, but Extract
+  does not.) Don't read `SourcePointer` as more precise than that.
+- **The `sarvamai` SDK is pre-1.0** (`0.1.31`) -- the interface may
+  change under it.
+- **File-size limits and free-signup-credit amounts vary across Sarvam's
+  own documentation pages** -- worth checking your own dashboard for the
+  current numbers rather than relying on either published figure. Not
+  stress-tested by this repo either way: every sample document used here
+  is a small single-page image, well under any plausible limit.
+- **The synthetic-arm "handwriting" field type (English and Devanagari)
+  is a script font (Segoe Print for English; no handwriting-styled
+  Devanagari font exists on the system this was built on, so that arm's
+  `handwriting` field type uses a different Nirmala weight instead), not
+  a handwriting simulation.** Any confidence numbers on that specific
+  synthetic field type are a weak proxy at best -- the real-handwriting
+  arm is what actually tests handwriting, and even that has the
+  limitations listed above.
 
 ## How to run
 
@@ -409,6 +454,9 @@ python samples/generate_samples.py
 ```
 
 Each run writes an append-only audit trail to `audit_logs/<claim_id>.jsonl`.
+
+See [Reproducing this](#reproducing-this) above for running the full
+confidence diagnosis.
 
 ## Synthetic data
 
@@ -428,20 +476,23 @@ Two sample claims, deliberately different:
 - **`claim_002`** -- messy, on purpose:
   - `nominee_kyc.png` is missing entirely.
   - The deceased's name is "Ramesh Kumar Sharma" on the death certificate
-    and claim intimation form, but "Ramesh Sharma" (middle name dropped) on
-    the hospital discharge summary -- a realistic transcription mismatch.
+    and claim intimation form, but "Ramesh Sharma" (middle name dropped)
+    on the hospital discharge summary -- a realistic transcription
+    mismatch.
   - The discharge summary's cause-of-death field is rendered in a
     handwriting-style font, not typeset text.
-  - The death certificate has visible scan artifacts: skew, sensor noise,
-    vignetting, and JPEG recompression, simulating a phone photo of a paper
-    certificate.
-  - The death certificate's `place_of_death` field is additionally smudged
-    (heavy localized pixelation/blur/noise, genuinely unreadable) -- this is
-    the field behind the [Key finding](#key-finding-confidence-10-does-not-mean-correct)
-    above. Sarvam's returned confidence for it does *not* reliably signal
-    whether the value is trustworthy, so `run.py`'s summary won't
-    necessarily flag it -- that's the point being demonstrated, not a bug.
-  - Expected result: **not** decision-ready, because of the missing document
-    and the name mismatch -- both flagged, never silently resolved. The
-    smudged field may or may not additionally show up as low-confidence
-    depending on what Sarvam returns on that particular run.
+  - The death certificate has visible scan artifacts: skew, sensor
+    noise, vignetting, and JPEG recompression, simulating a phone photo
+    of a paper certificate.
+  - The death certificate's `place_of_death` field is additionally
+    smudged (heavy localized pixelation/blur/noise, genuinely
+    unreadable) -- this is the field behind
+    [where this finding came from](#the-finding) above. Sarvam's
+    returned confidence for it does *not* reliably signal whether the
+    value is trustworthy, so `run.py`'s summary won't necessarily flag
+    it -- that's the point being demonstrated, not a bug.
+  - Expected result: **not** decision-ready, because of the missing
+    document and the name mismatch -- both flagged, never silently
+    resolved. The smudged field may or may not additionally show up as
+    low-confidence depending on what Sarvam returns on that particular
+    run.
