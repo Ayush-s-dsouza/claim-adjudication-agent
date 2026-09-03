@@ -1,13 +1,13 @@
 # Claim Adjudication Agent (demo)
 
-This repo answers one question: can claims-intake tooling for Indian life
-insurers actually be built on Sarvam's Extract API, and what breaks when
-you try? There's a working pipeline here -- point it at a folder of claim
-documents and it extracts fields, checks sufficiency, and hands a human
-adjudicator a decision-ready summary. Testing that pipeline against
-genuinely handwritten Indic-script paperwork surfaced a specific,
-reproducible failure: on real bad handwriting, the model almost never
-admits it can't read something. It guesses, confidently, instead.
+This repo answers one question: how can claims-intake tooling for Indian 
+life insurers actually be built on Sarvam's Extract API? There's a 
+working pipeline here -- point it at a folder of claim documents and 
+it extracts fields, checks sufficiency, and hands a human adjudicator 
+a decision-ready summary. Testing that pipeline against genuinely 
+handwritten Indic-script paperwork surfaced a specific, reproducible 
+failure: on real bad handwriting, the model almost never admits it can't 
+read something. It guesses, confidently, instead.
 
 **Sarvam's Extract API is not documented as handling handwriting at
 all.** Digitise (Sarvam's other document endpoint) explicitly supports a
