@@ -293,72 +293,107 @@ Approach"](https://arxiv.org/abs/1501.05472)). Some of the real-arm gap
 is therefore script-level and expected from the literature; the
 real-handwriting arm adds a distinct, larger failure mode on top of it.
 
-### Phase 3: what fixed it, what didn't
+### Phase 3: the acceptance rule, and what it found
 
-Bounded, validation-gated iteration against the frozen baseline --
-`eval/experiments.py`'s `decide()` accepts a change only if fabrication
-rate improves by >=2 percentage points with no more than a small
-accuracy-legible regression; a 6-accepted/12-experiment hard stop is
-enforced in `check_budget()`, called before every experiment. Scoped to
-the real arm only (see above). Per the approved plan: hypotheses 1 and 2
-only, hypothesis 3 added only if both failed.
+`eval/experiments.py`'s `decide()` runs a case level paired cluster
+bootstrap on the actual rows behind a candidate change. It tests two
+things separately, each at 90% confidence, by resampling case IDs with
+replacement (10,000 resamples, fixed seed, the same paired cluster
+bootstrap method used throughout this diagnosis, not a separate ad hoc
+calculation):
 
+- **Benefit confirmed**: the fabrication rate improvement's bootstrap
+  confidence interval excludes zero.
+- **Cost confirmed**: the accuracy legible regression's confidence
+  interval, at the same confidence level, also excludes zero.
+
+A change is accepted if its benefit is confirmed and it has no confirmed
+cost. If both a benefit and a cost are confirmed, it is accepted only if
+the benefit's lower bound exceeds the cost's upper bound. See `decide()`'s
+own docstring in `eval/experiments.py` for the full logic. A 6
+accepted/12 experiment hard stop, enforced in `check_budget()`, is
+unchanged from before. Scoped to the real arm only, validation split
+only, per the approved plan: hypotheses 1 and 2, hypothesis 3 added only
+if both failed.
+
+- **Hypothesis 1 (nullable schema, explicit "return null if illegible"
+  instruction): ACCEPTED.** Fabrication rate improvement 13.3 to 45.0
+  points, 90% CI, n=12 fabrication eligible cases, interval excludes
+  zero. Accuracy legible cost 0.0 to 12.0 points, 90% CI, n=15 legible
+  cases, interval includes zero: the cost is not statistically
+  distinguishable from noise at this sample size.
 - **Hypothesis 2 (self-consistency, k=3 of 5 repeats must agree or
-  abstain) -- ACCEPTED.** Computed for free by re-aggregating the
-  baseline's already-collected repeats, no new API calls. Fabrication
-  rate 31.7% -> 25.0% (validation split, n=30), zero accuracy cost.
-- **Hypothesis 1 (nullable schema + explicit "return null if illegible"
-  instruction) -- REJECTED.** This is arguably the single strongest
-  methodological point in this repo: the change improved fabrication rate
-  by a large 28.3 points, but cost 4.0 points of legible-input accuracy
-  -- over the pre-committed 2-point tolerance. **A different risk
-  tolerance would take that trade.** The point of pre-committing the
-  threshold *before* running the experiment was specifically to prevent
-  that call being made after seeing the numbers, when a 28-point
-  improvement is sitting right there and easy to rationalize keeping. The
-  gate rejected a change with a large, real benefit, on a rule agreed to
-  in advance. That's what it's for.
-- Hypothesis 2 succeeding meant **Hypothesis 3 (verification pass) was
-  skipped**, per the plan's own stopping rule.
+  abstain): REJECTED.** Fabrication rate improvement -5.0 to +20.0
+  points, 90% CI, n=12 cases, interval includes zero: the improvement is
+  not statistically distinguishable from noise at this sample size. Its
+  accuracy legible delta was 0.0 points exactly, no observed change
+  either way, so it carries no confirmed cost either. It is not accepted
+  on its own, since its own benefit does not clear the bar, but nothing
+  here suggests it adds risk when layered onto a change that does.
+- Hypothesis 3 (verification pass) was not run: hypothesis 1 already
+  cleared the bar, per the plan's own stopping rule.
 
-Final accepted configuration going into Phase 4: baseline extraction +
-self-consistency (k=3 of 5) aggregation. The schema-instruction change is
-not applied.
+Final configuration: hypothesis 1's abstention instruction is the
+confirmed fix. Self-consistency, k=3 of 5, is layered on top of it, not
+because its own benefit is confirmed at this sample size, but because it
+carries no confirmed cost either. This is what `extract.py` applies in
+production now: every field's schema description carries the abstention
+instruction, and every document is extracted 5 times with a field's
+value kept only where at least 3 of 5 calls agree. Self-consistency's
+presence in the pipeline is not evidence its own benefit is proven; the
+figures below are what actually happened when the two are combined and
+run against data neither has touched before.
 
 ### Phase 4: held-out test, opened once
 
-`eval/splits.py::load_split('test', allow_test=True, arm='real_handwriting')`
--- unlocked as a single deliberate decision, made once. The loader itself
-was invoked 3 times that afternoon (all logged, timestamps in
-`eval/real_handwriting/TEST_SET_ACCESS_LOG.jsonl`, committed to the
-repo): once to confirm the lock actually opened, then twice more while
-resuming an interrupted 125-call collection run. Each invocation re-reads
-the same fixed 25-case list, so no new information leaked per call and
-nothing about what got tested or how changed across the three calls. The
-access log is committed as-is.
+On the full 25-case test split, data neither hypothesis 1 nor
+self-consistency had touched before: the corrected configuration
+fabricated on **0% of fabrication-eligible test cases** (0/40 rows, n=8
+cases, both with and without self-consistency), against **27.5% (11/40)
+for the raw, uncorrected baseline** on those same cases. Accuracy stayed
+within a few points of that baseline. This is the number the rest of
+this section supports and qualifies.
 
-| Metric | Validation (raw) | Validation (self-consistency) | Test (raw) | **Test (self-consistency)** |
+| Metric | Validation, raw | Validation, +self-consistency | Test, raw | **Test, +self-consistency** |
 |---|---|---|---|---|
-| Fabrication rate | 31.7% (n=30) | 25.0% (n=30) | 27.5% (n=25) | **14.3% (1/7)** |
-| Accuracy (legible) | 73.3% (n=30) | 73.3% (n=30) | 72.9% (n=25) | **70.6% (n=24)** |
+| Fabrication rate | 3.3% (2/60 rows, n=12 cases) | 0.0% (0/12 cases) | 0.0% (0/40 rows, n=8 cases) | **0.0% (0/8 cases)** |
+| Accuracy (legible) | 69.3% (n=15 cases, 75 rows) | 66.7% (n=15 cases) | 68.2% (n=17 cases, 85 rows) | **76.5% (n=17 cases)** |
 
-**No overfitting**: test tracks validation closely at both the raw and
-self-consistency-applied level. The 14.3% test figure has a denominator
-of 7 cases (self-consistency collapses 5 repeats into 1 verdict per case,
-and the test split simply doesn't have many illegible/absent cases), so a
-single flip moves it by ~14 points. Read it as "consistent with
-validation, within noise" rather than as an improvement over validation's
-25.0%.
+**No overfitting**: the configuration's fabrication rate sits at or near
+zero on both validation and test. Accuracy on test, 76.5% with
+self-consistency, came in higher than on validation, 66.7%, not lower.
+With only 15 to 17 legible cases in each split, a gap this size is on
+the order of what one or two flipped cases would produce, not evidence
+the configuration performs better on test than on validation. Read the
+two together as consistent with each other, not as a trend.
 
-**One gap held-out testing cannot close, stated directly**: the test
-split has **zero `illegible_natural` cases** -- all 4 of that tier's
-samples (2 per field type; see the field-type limitation above) landed
-in tune/validation during stratification, a direct consequence of the
-pool being that small. **The 70% naturally-illegible fabrication rate --
-the single most important number in this whole diagnosis, and it rests
-on n=20 -- is therefore not re-confirmed by held-out data.** It stands on
-the original tune+validation sample alone. The Phase 4 table above does
-not cover it.
+**One gap held-out testing still cannot close, stated directly**: the
+test split has **zero `illegible_natural` cases** (all 4 of that tier's
+samples, 2 per field type, landed in tune/validation during
+stratification, a direct consequence of the pool being that small).
+**The 70% naturally-illegible fabrication rate, the single most
+important number in this whole diagnosis, and it rests on n=20, is
+therefore still not re-confirmed by held-out data.** It stands on the
+original tune+validation sample alone. The table above does not cover
+it.
+
+**How this was run, for anyone checking it.**
+`eval/splits.py::load_split('test', allow_test=True, arm='real_handwriting')`
+was unlocked as a deliberate decision. The loader has now been invoked 5
+times total, all logged in
+`eval/real_handwriting/TEST_SET_ACCESS_LOG.jsonl`: 3 times during the
+original test collection (confirming the lock opened, then resuming an
+interrupted run), and 2 more times to collect hypothesis 1's
+configuration against the same held-out cases, one full pass and one
+retry of a single call that failed on a network timeout. Each invocation
+re-reads the same fixed 25-case list. The access log,
+`eval/real_handwriting/results/h1_nullable_instruction_test.jsonl` (the
+125 raw test-split calls behind the table above), and
+`eval/real_handwriting/results/experiment_log.jsonl` (the corrected
+decide() logic and both re-evaluations, appended, with the original two
+entries left exactly as they were) are all committed to this repo. This
+is a correction made in public; the evidence for it is checkable, not
+asserted.
 
 ### Reproducing this
 

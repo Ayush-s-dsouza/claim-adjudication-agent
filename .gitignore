@@ -8,10 +8,16 @@ venv/
 audit_logs/
 DECISION_LOG.md
 eval/results/
-eval/*/results/
+eval/*/results/*
 # Real-handwriting arm: never commit the source dataset, nor anything
 # composited from it (extracted real ink, even transformed, is still
 # derived from a no-explicit-license third-party work -- see README).
 # Only manifest.json (text labels + metadata) is committed for this arm.
 eval/real_handwriting/.cache/
 eval/real_handwriting/cases/
+# Exceptions: evidence for the decide() acceptance-rule correction (see
+# README, "Phase 4: held-out test, opened once") -- committed so the
+# correction is checkable, not asserted. Everything else under
+# eval/real_handwriting/results/ stays gitignored as before.
+!eval/real_handwriting/results/h1_nullable_instruction_test.jsonl
+!eval/real_handwriting/results/experiment_log.jsonl

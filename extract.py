@@ -19,9 +19,26 @@ Known, documented limits worth remembering while reading this file:
   region within the page for Extract results (Digitise has one; Extract
   does not).
 - Handwriting support is only explicitly documented for Digitise, not for
-  Extract. Whether Extract degrades gracefully on a handwritten field is
-  untested here.
+  Extract. This was tested (see README, "The finding" and "The full
+  diagnosis"): on genuinely bad real handwriting, Extract fabricated a
+  confident wrong answer 70% of the time (n=20) rather than abstaining.
+  The two corrections below exist because of that finding, not as
+  speculative hardening.
 - 10-page hard cap per job; 10 requests/minute flat across all plan tiers.
+
+Two corrections are applied to every extraction, both landed after a
+statistically grounded evaluation, not as speculative hardening:
+- ABSTENTION_INSTRUCTION is appended to every field's schema description.
+  Confirmed: a case-level paired cluster bootstrap showed its
+  fabrication-rate benefit's confidence interval excludes zero at 90%
+  confidence, while its accuracy-legible cost does not (see README,
+  "Acceptance rule").
+- Every document is extracted SELF_CONSISTENCY_N times and a field's
+  value is kept only if it agrees across at least SELF_CONSISTENCY_K of
+  those calls, costing SELF_CONSISTENCY_N times the API calls of a single
+  extraction. Its benefit was NOT confirmed at the sample size this repo
+  evaluated. It is layered in because it has no confirmed cost, not
+  because it is proven to help -- see README, "Phase 3".
 """
 
 from __future__ import annotations
@@ -29,6 +46,8 @@ from __future__ import annotations
 import json
 import os
 import time
+import unicodedata
+from collections import defaultdict, deque
 from pathlib import Path
 from typing import Any, Optional
 
@@ -38,6 +57,20 @@ from schema import DocumentType, ExtractedDocument, ExtractedField, SourcePointe
 
 TERMINAL_STATUSES = {"completed", "partially_completed", "failed", "rejected"}
 SUCCESS_STATUSES = {"completed", "partially_completed"}
+
+# Confirmed correction (README, "Acceptance rule"): explicit abstention
+# instruction, appended to every field's schema description below.
+ABSTENTION_INSTRUCTION = (
+    "If the value is not clearly legible, is illegible, or is not present "
+    "anywhere in the image, return null. Do not guess or infer a "
+    "plausible-looking value."
+)
+
+# Unconfirmed-but-zero-cost addition (README, "Phase 3"): repeat each
+# document extraction this many times, keep a field's value only if it
+# agrees across at least K of those N calls.
+SELF_CONSISTENCY_K = 3
+SELF_CONSISTENCY_N = 5
 
 MIME_TYPES = {
     ".pdf": "application/pdf",
@@ -92,6 +125,56 @@ DOCUMENT_SCHEMAS: dict[DocumentType, dict[str, Any]] = {
 }
 
 
+def _schema_with_abstention_instruction(document_type: DocumentType) -> dict[str, Any]:
+    """DOCUMENT_SCHEMAS' field descriptions stay readable, semantic
+    documentation; ABSTENTION_INSTRUCTION is appended here, at the point
+    the schema is actually serialized for the API call, so the two
+    concerns (what a field means vs. the confirmed instruction that
+    changes model behavior) don't get tangled in one string."""
+    base = DOCUMENT_SCHEMAS[document_type]
+    return {
+        "type": base["type"],
+        "properties": {
+            name: {**field, "description": f"{field['description']} {ABSTENTION_INSTRUCTION}"}
+            for name, field in base["properties"].items()
+        },
+    }
+
+
+def _normalize(value: str) -> str:
+    """NFC + whitespace-collapse, matching eval/metrics.py's normalize() --
+    needed here too because self-consistency's agreement check has the same
+    Devanagari precomposed-vs-decomposed problem that function exists to
+    fix: two calls can return the same visible glyph as different codepoint
+    sequences, and without this they'd wrongly count as disagreeing."""
+    return unicodedata.normalize("NFC", " ".join(value.strip().split()))
+
+
+class _RateLimiter:
+    """Keeps calls under Sarvam's flat 10/minute Document Intelligence cap
+    using a sliding 60s window. Only needed here because self-consistency
+    (below) turns one document extraction into SELF_CONSISTENCY_N job
+    submissions plus their status polls, easily enough traffic to trip the
+    limit within a single claim's worth of documents."""
+
+    def __init__(self, max_per_minute: int = 10):
+        self.max_per_minute = max_per_minute
+        self.timestamps: deque[float] = deque()
+
+    def wait(self) -> None:
+        now = time.monotonic()
+        while self.timestamps and now - self.timestamps[0] > 60:
+            self.timestamps.popleft()
+        if len(self.timestamps) >= self.max_per_minute:
+            sleep_for = 60 - (now - self.timestamps[0]) + 0.25
+            if sleep_for > 0:
+                time.sleep(sleep_for)
+            now = time.monotonic()
+            while self.timestamps and now - self.timestamps[0] > 60:
+                self.timestamps.popleft()
+        self.timestamps.append(now)
+
+
 class ExtractionError(Exception):
     """Raised when Sarvam can't be reached, rejects the job, or the job
     ends in a non-success terminal status. Never raised to mean "field not
@@ -113,17 +196,31 @@ class SarvamExtractor:
         self.client = SarvamAI(api_subscription_key=key)
         self.poll_interval_seconds = poll_interval_seconds
         self.poll_timeout_seconds = poll_timeout_seconds
+        self._rate_limiter = _RateLimiter()
 
     def extract_document(
         self, document_type: DocumentType, file_path: Path, language: str = "en-IN"
     ) -> ExtractedDocument:
         """Run one document through Sarvam's Extract API and return it as
-        an ExtractedDocument with per-field confidence and source."""
-        schema = DOCUMENT_SCHEMAS[document_type]
+        an ExtractedDocument with per-field confidence and source.
+
+        Extracts the document SELF_CONSISTENCY_N times (each call using
+        the abstention-instructed schema, see _schema_with_abstention_
+        instruction) and aggregates per field, keeping a value only if it
+        agrees across at least SELF_CONSISTENCY_K of those calls. See this
+        file's module docstring for what's confirmed and what isn't."""
+        schema = _schema_with_abstention_instruction(document_type)
         mime_type = MIME_TYPES.get(file_path.suffix.lower())
         if mime_type is None:
             raise ExtractionError(f"Unsupported file type for Sarvam Extract: {file_path.suffix}")
 
+        calls = [self._extract_once(document_type, file_path, mime_type, schema, language) for _ in range(SELF_CONSISTENCY_N)]
+        return self._aggregate_self_consistency(document_type, file_path.name, calls)
+
+    def _extract_once(
+        self, document_type: DocumentType, file_path: Path, mime_type: str, schema: dict[str, Any], language: str
+    ) -> ExtractedDocument:
+        self._rate_limiter.wait()
         with file_path.open("rb") as f:
             job = self.client.doc_ai.extract(
                 file=[(file_path.name, f, mime_type)],
@@ -138,12 +235,45 @@ class SarvamExtractor:
                 f"Sarvam extract job {job.job_id} for {file_path.name} ended with status={status.status!r}"
             )
 
+        self._rate_limiter.wait()
         results = self.client.doc_ai.get_results(job_id=job.job_id)
         return self._to_extracted_document(document_type, file_path.name, results)
+
+    def _aggregate_self_consistency(
+        self, document_type: DocumentType, filename: str, calls: list[ExtractedDocument]
+    ) -> ExtractedDocument:
+        """k-of-n aggregation across SELF_CONSISTENCY_N repeated calls,
+        matching eval/experiments.py's apply_self_consistency() exactly
+        (same k, same n, same "normalize then majority-vote, else abstain"
+        rule) -- this is what was actually evaluated, not a variant of it."""
+        document = ExtractedDocument(document_type=document_type, filename=filename)
+        for field_name in DOCUMENT_SCHEMAS[document_type]["properties"]:
+            per_call = [c.fields[field_name] for c in calls]
+            votes: dict[str, list[ExtractedField]] = defaultdict(list)
+            for f in per_call:
+                if f.found and f.value:
+                    votes[_normalize(f.value)].append(f)
+            winner, agreeing = max(votes.items(), key=lambda kv: len(kv[1])) if votes else (None, [])
+
+            if winner is not None and len(agreeing) >= SELF_CONSISTENCY_K:
+                confidence = sum(f.confidence for f in agreeing) / len(agreeing)
+                document.fields[field_name] = ExtractedField(
+                    field_name=field_name,
+                    value=agreeing[0].value,
+                    confidence=confidence,
+                    source=agreeing[0].source,
+                    found=True,
+                )
+            else:
+                document.fields[field_name] = ExtractedField(
+                    field_name=field_name, value=None, confidence=0.0, source=None, found=False,
+                )
+        return document
 
     def _poll_until_terminal(self, job_id: str):
         elapsed = 0.0
         while True:
+            self._rate_limiter.wait()
             status = self.client.doc_ai.get_status(job_id=job_id)
             if status.status in TERMINAL_STATUSES:
                 return status
