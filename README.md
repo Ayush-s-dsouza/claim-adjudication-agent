@@ -268,8 +268,8 @@ size. See `eval/generate_real_handwriting.py`'s `CURATED_SAMPLES` for exactly wh
 | Fabrication rate (aggregate) | 17.9% (n=350) | 21.6% (n=349) | 30.0% (n=295) |
 | Extraction accuracy (legible input) | 100.0% (n=210) | 66.2% (n=349) | 79.4% (n=295) |
 | Abstention rate (illegible/processed) | 64.3% | 63.5% | 60.0% |
-| **Abstention rate (naturally illegible)** | n/a | n/a | **0.0% (0/20)** |
-| **Fabrication rate (naturally illegible)** | n/a | n/a | **70.0% (14/20)** |
+| **Abstention rate (naturally illegible)** | n/a | n/a | **0.0% (0/20 calls, 4 cases)** |
+| **Fabrication rate (naturally illegible)** | n/a | n/a | **70.0% (14/20 calls, 4 cases)** |
 
 The naturally-illegible row is [the finding](#the-finding) already stated
 above, restated here in the full comparison for context: it's the
@@ -443,6 +443,10 @@ context above; this section collects them in one place for reference.
 - **The headline finding rests on 4 independent cases, 20 observations
   across their repeated calls, and isn't re-confirmed by held-out
   data.** See [Phase 4](#phase-4-held-out-test-opened-once).
+- **The accepted production configuration still confidently fabricates
+  on 1 of the 4 known `illegible_natural` cases**, even with H1's
+  abstention instruction applied, though it now correctly handles the
+  other 3. See [Phase 3](#phase-3-the-acceptance-rule-and-what-it-found).
 - **Extract has no handwriting affordance** (no `content_type` hint, no
   "present but illegible" state). This is the product gap the whole
   investigation is about. See [The finding](#the-finding).
