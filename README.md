@@ -44,11 +44,13 @@ summary. The pay/deny call is never made here.
 ## The finding
 
 On genuinely bad real handwriting, actual messy human writing, zero
-synthetic degradation applied - Sarvam's Extract API abstained **0 times
-out of 20 cases** and fabricated a confident wrong answer **14 times out
-of 20 (70%, n=20)**, every wrong answer at ~0.9999-1.0 confidence. That's
-more than double the fabrication rate seen on synthetically-degraded
-input, where the model abstained 60% of the time instead of guessing.
+synthetic degradation applied: across 4 independent naturally-illegible
+words, 5 repeated calls each, 20 observations total, Sarvam's Extract
+API abstained **0 times out of 20 calls** and fabricated a confident
+wrong answer **14 times out of 20 (70%)**, every wrong answer at
+~0.9999-1.0 confidence. That's more than double the fabrication rate
+seen on synthetically-degraded input, where the model abstained 60% of
+the time instead of guessing.
 
 Two examples, verified by reading the actual output: the word "कुंदेरा" (Kundera) was misread differently and
 wrongly across all 5 repeated calls ("बंदेरा", "वृंदेरा", "ब्रंदेरा"...),
@@ -257,7 +259,7 @@ size. See `eval/generate_real_handwriting.py`'s `CURATED_SAMPLES` for exactly wh
   per field type, because genuinely bad handwriting has to be found by
   looking at real images. Synthetic degradation can be manufactured on
   demand, this can't. This is also the tier the headline 70% figure comes
-  from - see the n=20 caveat under Phase 4.
+  from: see the sample-size caveat under Phase 4.
 
 ### Three-arm baseline comparison
 
@@ -344,6 +346,18 @@ presence in the pipeline is not evidence its own benefit is proven; the
 figures below are what actually happened when the two are combined and
 run against data neither has touched before.
 
+**A real limitation of this configuration, not a solved problem**: of the
+4 known `illegible_natural` cases, the full production configuration,
+H1's instruction plus self-consistency, correctly handles 3, either a
+correct value or a genuine abstention, and confidently fabricates a
+wrong value on the fourth, the same value on 3 of 5 repeats even with
+the abstention instruction present. This is a real improvement over
+baseline's 3 of 4 wrong; it is not a solved problem. The fourth case
+likely resists the fix because the model's fabrication there was already
+fully deterministic across all 5 baseline repeats, before any
+instruction change; an instruction that only helps when the model has
+some internal uncertainty to act on has nothing to work with here.
+
 ### Phase 4: held-out test, opened once
 
 On the full 25-case test split, data neither hypothesis 1 nor
@@ -372,8 +386,9 @@ test split has **zero `illegible_natural` cases** (all 4 of that tier's
 samples, 2 per field type, landed in tune/validation during
 stratification, a direct consequence of the pool being that small).
 **The 70% naturally-illegible fabrication rate, the single most
-important number in this whole diagnosis, and it rests on n=20, is
-therefore still not re-confirmed by held-out data.** It stands on the
+important number in this whole diagnosis, rests on 4 independent cases,
+20 observations across their repeated calls, and is therefore still not
+re-confirmed by held-out data.** It stands on the
 original tune+validation sample alone. The table above does not cover
 it.
 
@@ -425,8 +440,9 @@ Everything in this section is a real, currently-true constraint on what
 this repo has and hasn't shown. Each is also discussed in more depth in
 context above; this section collects them in one place for reference.
 
-- **The headline finding rests on n=20 and isn't re-confirmed by
-  held-out data.** See [Phase 4](#phase-4-held-out-test-opened-once).
+- **The headline finding rests on 4 independent cases, 20 observations
+  across their repeated calls, and isn't re-confirmed by held-out
+  data.** See [Phase 4](#phase-4-held-out-test-opened-once).
 - **Extract has no handwriting affordance** (no `content_type` hint, no
   "present but illegible" state). This is the product gap the whole
   investigation is about. See [The finding](#the-finding).
